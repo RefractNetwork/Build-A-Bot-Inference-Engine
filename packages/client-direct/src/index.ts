@@ -201,7 +201,6 @@ export class DirectClient {
 
                 let runtime = this.agents.get(agentId);
 
-                // if runtime is null, look for runtime with the same name
                 if (!runtime) {
                     runtime = Array.from(this.agents.values()).find(
                         (a) =>
@@ -224,7 +223,6 @@ export class DirectClient {
                 );
 
                 const text = req.body.text;
-                // if empty text, directly return
                 if (!text) {
                     res.json([]);
                     return;
@@ -265,20 +263,8 @@ export class DirectClient {
                     agentId: runtime.agentId,
                 };
 
-                const memory: Memory = {
-                    id: stringToUuid(messageId + "-" + userId),
-                    ...userMessage,
-                    agentId: runtime.agentId,
-                    userId,
-                    roomId,
-                    content,
-                    createdAt: Date.now(),
-                };
-
-                await runtime.messageManager.addEmbeddingToMemory(memory);
-                await runtime.messageManager.createMemory(memory);
-
-                let state = await runtime.composeState(userMessage, {
+                // Remove memory operations
+                const state = await runtime.composeState(userMessage, {
                     agentName: runtime.character.name,
                 });
 
@@ -300,54 +286,8 @@ export class DirectClient {
                     return;
                 }
 
-                // save response to memory
-                const responseMessage: Memory = {
-                    id: stringToUuid(messageId + "-" + runtime.agentId),
-                    ...userMessage,
-                    userId: runtime.agentId,
-                    content: response,
-                    embedding: getEmbeddingZeroVector(),
-                    createdAt: Date.now(),
-                };
-
-                await runtime.messageManager.createMemory(responseMessage);
-
-                state = await runtime.updateRecentMessageState(state);
-
-                let message = null as Content | null;
-
-                await runtime.processActions(
-                    memory,
-                    [responseMessage],
-                    state,
-                    async (newMessages) => {
-                        message = newMessages;
-                        return [memory];
-                    }
-                );
-
-                await runtime.evaluate(memory, state);
-
-                // Check if we should suppress the initial message
-                const action = runtime.actions.find(
-                    (a) => a.name === response.action
-                );
-                const shouldSuppressInitialMessage =
-                    action?.suppressInitialMessage;
-
-                if (!shouldSuppressInitialMessage) {
-                    if (message) {
-                        res.json([response, message]);
-                    } else {
-                        res.json([response]);
-                    }
-                } else {
-                    if (message) {
-                        res.json([message]);
-                    } else {
-                        res.json([]);
-                    }
-                }
+                // Skip memory storage and just return the response
+                res.json([response]);
             }
         );
 
@@ -459,13 +399,13 @@ export class DirectClient {
                                       nearby.map((item) => z.literal(item)) as [
                                           z.ZodLiteral<string>,
                                           z.ZodLiteral<string>,
-                                          ...z.ZodLiteral<string>[],
+                                          ...z.ZodLiteral<string>[]
                                       ]
                                   )
                                   .nullable()
                             : nearby.length === 1
-                              ? z.literal(nearby[0]).nullable()
-                              : z.null(); // Fallback for empty array
+                            ? z.literal(nearby[0]).nullable()
+                            : z.null(); // Fallback for empty array
 
                     const emoteSchema =
                         availableEmotes.length > 1
@@ -476,13 +416,13 @@ export class DirectClient {
                                       ) as [
                                           z.ZodLiteral<string>,
                                           z.ZodLiteral<string>,
-                                          ...z.ZodLiteral<string>[],
+                                          ...z.ZodLiteral<string>[]
                                       ]
                                   )
                                   .nullable()
                             : availableEmotes.length === 1
-                              ? z.literal(availableEmotes[0]).nullable()
-                              : z.null(); // Fallback for empty array
+                            ? z.literal(availableEmotes[0]).nullable()
+                            : z.null(); // Fallback for empty array
 
                     return z.object({
                         lookAt: lookAtSchema,
@@ -679,7 +619,9 @@ export class DirectClient {
 
                     if (!fileResponse.ok) {
                         throw new Error(
-                            `API responded with status ${fileResponse.status}: ${await fileResponse.text()}`
+                            `API responded with status ${
+                                fileResponse.status
+                            }: ${await fileResponse.text()}`
                         );
                     }
 

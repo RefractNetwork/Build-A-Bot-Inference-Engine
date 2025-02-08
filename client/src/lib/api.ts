@@ -9,7 +9,7 @@ const fetcher = async ({
     headers,
 }: {
     url: string;
-    method?: "GET" | "POST";
+    method?: "GET" | "POST" | "DELETE";
     body?: object | FormData;
     headers?: HeadersInit;
 }) => {
@@ -64,6 +64,11 @@ const fetcher = async ({
 };
 
 export const apiClient = {
+    delete: (url: string) =>
+        fetcher({
+            url,
+            method: "DELETE",
+        }),
     post: (url: string, body: object) =>
         fetcher({
             url,
