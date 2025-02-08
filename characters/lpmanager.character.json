@@ -1,6 +1,6 @@
 {
     "name": "LP Manager",
-    "modelProvider": "openai",
+    "modelProvider": "anthropic",
     "plugins": [],
     "clients": [],
     "settings": {
