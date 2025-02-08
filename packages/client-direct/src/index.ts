@@ -201,6 +201,7 @@ export class DirectClient {
 
                 let runtime = this.agents.get(agentId);
 
+                // if runtime is null, look for runtime with the same name
                 if (!runtime) {
                     runtime = Array.from(this.agents.values()).find(
                         (a) =>
@@ -223,6 +224,7 @@ export class DirectClient {
                 );
 
                 const text = req.body.text;
+                // if empty text, directly return
                 if (!text) {
                     res.json([]);
                     return;
@@ -263,8 +265,20 @@ export class DirectClient {
                     agentId: runtime.agentId,
                 };
 
-                // Remove memory operations
-                const state = await runtime.composeState(userMessage, {
+                const memory: Memory = {
+                    id: stringToUuid(messageId + "-" + userId),
+                    ...userMessage,
+                    agentId: runtime.agentId,
+                    userId,
+                    roomId,
+                    content,
+                    createdAt: Date.now(),
+                };
+
+                await runtime.messageManager.addEmbeddingToMemory(memory);
+                await runtime.messageManager.createMemory(memory);
+
+                let state = await runtime.composeState(userMessage, {
                     agentName: runtime.character.name,
                 });
 
@@ -286,8 +300,54 @@ export class DirectClient {
                     return;
                 }
 
-                // Skip memory storage and just return the response
-                res.json([response]);
+                // save response to memory
+                const responseMessage: Memory = {
+                    id: stringToUuid(messageId + "-" + runtime.agentId),
+                    ...userMessage,
+                    userId: runtime.agentId,
+                    content: response,
+                    embedding: getEmbeddingZeroVector(),
+                    createdAt: Date.now(),
+                };
+
+                await runtime.messageManager.createMemory(responseMessage);
+
+                state = await runtime.updateRecentMessageState(state);
+
+                let message = null as Content | null;
+
+                await runtime.processActions(
+                    memory,
+                    [responseMessage],
+                    state,
+                    async (newMessages) => {
+                        message = newMessages;
+                        return [memory];
+                    }
+                );
+
+                await runtime.evaluate(memory, state);
+
+                // Check if we should suppress the initial message
+                const action = runtime.actions.find(
+                    (a) => a.name === response.action
+                );
+                const shouldSuppressInitialMessage =
+                    action?.suppressInitialMessage;
+
+                if (!shouldSuppressInitialMessage) {
+                    if (message) {
+                        res.json([response, message]);
+                    } else {
+                        res.json([response]);
+                    }
+                } else {
+                    if (message) {
+                        res.json([message]);
+                    } else {
+                        res.json([]);
+                    }
+                }
             }
         );
 

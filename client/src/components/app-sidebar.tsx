@@ -16,8 +16,9 @@ import {
 import { apiClient } from "@/lib/api";
 import { NavLink, useLocation } from "react-router";
 import type { UUID } from "@elizaos/core";
-import { Book, Cog, User } from "lucide-react";
+import { User } from "lucide-react";
 import ConnectionStatus from "./connection-status";
+import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 
 export function AppSidebar() {
     const location = useLocation();
@@ -29,6 +30,8 @@ export function AppSidebar() {
 
     const agents = query?.data?.agents;
 
+    const account = useCurrentAccount();
+
     return (
         <Sidebar>
             <SidebarHeader>
@@ -36,17 +39,19 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
                             <NavLink to="/">
-                                <img
-                                    alt="elizaos-icon"
-                                    src="/elizaos-icon.png"
-                                    width="100%"
-                                    height="100%"
-                                    className="size-7"
-                                />
+                                <div className="bg-white rounded-full p-2">
+                                    <img
+                                        alt="refract-icon"
+                                        src="/refract.png"
+                                        width="90%"
+                                        height="90%"
+                                        className="size-7"
+                                    />
+                                </div>
 
                                 <div className="flex flex-col gap-0.5 leading-none">
                                     <span className="font-semibold">
-                                        ElizaOS
+                                        Refract Eliza
                                     </span>
                                     <span className="">v{info?.version}</span>
                                 </div>
@@ -55,6 +60,15 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
+            <div className="mt-auto p-4 border-t border-gray-700">
+                {account ? (
+                    <div className="flex items-center justify-between">
+                        <ConnectButton />
+                    </div>
+                ) : (
+                    <ConnectButton />
+                )}
+            </div>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>Agents</SidebarGroupLabel>

@@ -8,7 +8,6 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import Chat from "./routes/chat";
 import Overview from "./routes/overview";
 import Home from "./routes/home";
-import useVersion from "./hooks/use-version";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -18,8 +17,9 @@ const queryClient = new QueryClient({
     },
 });
 
+import { AuthGuard } from "./components/auth-guard";
+
 function App() {
-    useVersion();
     return (
         <QueryClientProvider client={queryClient}>
             <div
@@ -30,24 +30,29 @@ function App() {
             >
                 <BrowserRouter>
                     <TooltipProvider delayDuration={0}>
-                        <SidebarProvider>
-                            <AppSidebar />
-                            <SidebarInset>
-                                <div className="flex flex-1 flex-col gap-4 size-full container">
-                                    <Routes>
-                                        <Route path="/" element={<Home />} />
-                                        <Route
-                                            path="chat/:agentId"
-                                            element={<Chat />}
-                                        />
-                                        <Route
-                                            path="settings/:agentId"
-                                            element={<Overview />}
-                                        />
-                                    </Routes>
-                                </div>
-                            </SidebarInset>
-                        </SidebarProvider>
+                        <AuthGuard>
+                            <SidebarProvider>
+                                <AppSidebar />
+                                <SidebarInset>
+                                    <div className="flex flex-1 flex-col gap-4 size-full container">
+                                        <Routes>
+                                            <Route
+                                                path="/"
+                                                element={<Home />}
+                                            />
+                                            <Route
+                                                path="chat/:agentId"
+                                                element={<Chat />}
+                                            />
+                                            <Route
+                                                path="settings/:agentId"
+                                                element={<Overview />}
+                                            />
+                                        </Routes>
+                                    </div>
+                                </SidebarInset>
+                            </SidebarProvider>
+                        </AuthGuard>
                         <Toaster />
                     </TooltipProvider>
                 </BrowserRouter>
