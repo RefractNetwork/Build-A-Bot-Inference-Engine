@@ -130,7 +130,7 @@ export function CreateAgentDialog() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-lg transition-colors ${
                 activeTab === tab
-                    ? "bg-blue-600 text-white"
+                    ? "bg-gray-600 text-white"
                     : "text-gray-400 hover:text-gray-200"
             }`}
         >
@@ -169,7 +169,7 @@ export function CreateAgentDialog() {
                 placeholder={`Paste your ${tab} JSON configuration here...`}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full h-[200px] p-2 bg-gray-800 border border-gray-700 rounded-lg resize-none text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-[200px] p-2 bg-gray-800 border border-gray-700 rounded-lg resize-none text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
             />
         </div>
     );
@@ -179,7 +179,7 @@ export function CreateAgentDialog() {
             {/* Add Agent Card - remains the same */}
             <div
                 onClick={() => setIsOpen(true)}
-                className="border border-gray-700 bg-gray-900 rounded-lg hover:border-blue-500 cursor-pointer transition-colors"
+                className="border border-gray-700 bg-gray-900 rounded-lg hover:border-gray-500 cursor-pointer transition-colors"
             >
                 <div className="p-4 border-b border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-100">
@@ -245,7 +245,7 @@ export function CreateAgentDialog() {
                                     !characterJson ||
                                     createAgentMutation.isPending
                                         ? "bg-gray-700 cursor-not-allowed"
-                                        : "bg-blue-600 hover:bg-blue-700"
+                                        : "bg-gray-600 hover:bg-gray-700"
                                 } transition-colors`}
                             >
                                 {createAgentMutation.isPending

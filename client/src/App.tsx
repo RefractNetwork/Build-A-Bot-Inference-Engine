@@ -18,6 +18,7 @@ const queryClient = new QueryClient({
 });
 
 import { AuthGuard } from "./components/auth-guard";
+import Build from "./routes/build";
 
 function App() {
     return (
@@ -39,6 +40,10 @@ function App() {
                                             <Route
                                                 path="/"
                                                 element={<Home />}
+                                            />
+                                            <Route
+                                                path="build"
+                                                element={<Build />}
                                             />
                                             <Route
                                                 path="chat/:agentId"
