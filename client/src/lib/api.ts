@@ -25,11 +25,11 @@ const fetcher = async ({
 
     if (method === "POST") {
         if (body instanceof FormData) {
-            if (options.headers && typeof options.headers === 'object') {
-                // Create new headers object without Content-Type
+            if (options.headers && typeof options.headers === "object") {
                 options.headers = Object.fromEntries(
-                    Object.entries(options.headers as Record<string, string>)
-                        .filter(([key]) => key !== 'Content-Type')
+                    Object.entries(
+                        options.headers as Record<string, string>
+                    ).filter(([key]) => key !== "Content-Type")
                 );
             }
             options.body = body;
@@ -39,7 +39,7 @@ const fetcher = async ({
     }
 
     return fetch(`${BASE_URL}${url}`, options).then(async (resp) => {
-        const contentType = resp.headers.get('Content-Type');
+        const contentType = resp.headers.get("Content-Type");
         if (contentType === "audio/mpeg") {
             return await resp.blob();
         }
@@ -58,12 +58,18 @@ const fetcher = async ({
 
             throw new Error(errorMessage);
         }
-            
+
         return resp.json();
     });
 };
 
 export const apiClient = {
+    post: (url: string, body: object) =>
+        fetcher({
+            url,
+            method: "POST",
+            body,
+        }),
     sendMessage: (
         agentId: string,
         message: string,
