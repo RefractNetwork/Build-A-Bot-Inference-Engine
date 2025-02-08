@@ -5,6 +5,7 @@ import { MemoryCarousel } from "@/components/ui/memory-carousel";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { Toast } from "@/components/ui/toast";
+import { useNavigate } from "react-router";
 
 type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
 
@@ -17,6 +18,8 @@ interface SelectedModules {
 }
 
 export default function Build() {
+    const navigate = useNavigate();
+
     const [selectedModules, setSelectedModules] = useState<SelectedModules>({
         character: null,
         knowledge: [],
@@ -70,42 +73,56 @@ export default function Build() {
         ((selectedModules.speech === null && selectedModules.tone === null) ||
             (selectedModules.speech && selectedModules.tone));
 
-    const handleInstantiate = () => {
-        if (!canInstantiate) return;
+    const handleInstantiate = async () => {
+        if (!selectedModules.character) return;
 
         try {
+            // Start with the base character
             let finalCharacter = { ...selectedModules.character.data };
 
-            // Add knowledge
+            // Add knowledge modules
             if (selectedModules.knowledge.length > 0) {
+                const additionalKnowledge = selectedModules.knowledge.flatMap(
+                    (module) => module.data
+                );
                 finalCharacter.knowledge = [
                     ...(finalCharacter.knowledge || []),
-                    ...selectedModules.knowledge.flatMap(
-                        (module) => module.data
-                    ),
+                    ...additionalKnowledge,
                 ];
             }
 
-            // Add memory
+            // Add memory module
             if (selectedModules.memory) {
+                const memoryKnowledge = selectedModules.memory.data.map(
+                    (memoryItem) => `Memory: ${memoryItem}`
+                );
                 finalCharacter.knowledge = [
                     ...(finalCharacter.knowledge || []),
-                    ...selectedModules.memory.data.map(
-                        (item) => `Memory: ${item}`
-                    ),
+                    ...memoryKnowledge,
                 ];
             }
 
-            // Add speech and tone if both are selected
+            // Add speech and tone if selected
             if (selectedModules.speech && selectedModules.tone) {
                 finalCharacter.speech = selectedModules.speech.data || {};
                 finalCharacter.tone = selectedModules.tone.data || {};
             }
 
-            createAgentMutation.mutate(finalCharacter);
+            // Create the agent
+            const response = await apiClient.post("/agent/start", {
+                characterJson: finalCharacter,
+            });
+
+            // Navigate to the agent chat
+            if (response.id) {
+                // Using React Router
+                navigate(`/chat/${response.id}`);
+                // Or using window.location
+                // window.location.href = `/chat/${response.id}`;
+            }
         } catch (error) {
             setToast({
-                message: "Error preparing agent configuration",
+                message: "Error creating agent: " + error.message,
                 type: "error",
             });
         }
