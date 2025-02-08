@@ -19,13 +19,12 @@ interface SelectedModules {
 
 export default function Build() {
     const navigate = useNavigate();
-
     const [selectedModules, setSelectedModules] = useState<SelectedModules>({
         character: null,
         knowledge: [],
         speech: null,
         tone: null,
-        memory: null,
+        memory: mockModules.memory[0],
     });
     const [toast, setToast] = useState<{
         message: string;
@@ -69,6 +68,7 @@ export default function Build() {
     // Simplified instantiation check
     const canInstantiate =
         selectedModules.character &&
+        selectedModules.memory &&
         // Speech and tone must either both be selected or both be null
         ((selectedModules.speech === null && selectedModules.tone === null) ||
             (selectedModules.speech && selectedModules.tone));
@@ -93,13 +93,18 @@ export default function Build() {
 
             // Add memory module
             if (selectedModules.memory) {
+                // Memory data is an array of strings in format "user: ... response: ..."
                 const memoryKnowledge = selectedModules.memory.data.map(
-                    (memoryItem) => `Memory: ${memoryItem}`
+                    (memoryItem) => memoryItem // The memory items are already formatted
                 );
+
+                // Add memories to knowledge array
                 finalCharacter.knowledge = [
                     ...(finalCharacter.knowledge || []),
                     ...memoryKnowledge,
                 ];
+
+                console.log("Final Knowledge Array:", finalCharacter.knowledge); // Debug log
             }
 
             // Add speech and tone if selected
@@ -108,17 +113,25 @@ export default function Build() {
                 finalCharacter.tone = selectedModules.tone.data || {};
             }
 
-            // Create the agent
-            const response = await apiClient.post("/agent/start", {
-                characterJson: finalCharacter,
-            });
+            // Example initial chat history
+            const initialMemories = [
+                {
+                    text: "Hello! How are you?",
+                    user: "user",
+                    createdAt: Date.now() - 1000 * 60 * 5, // 5 minutes ago
+                },
+                {
+                    text: "I'm doing great! How can I help you today?",
+                    user: "assistant",
+                    createdAt: Date.now() - 1000 * 60 * 4, // 4 minutes ago
+                }
+            ];
 
-            // Navigate to the agent chat
+            // Create the agent with initial memories
+            const response = await apiClient.startAgent(finalCharacter, initialMemories);
+
             if (response.id) {
-                // Using React Router
                 navigate(`/chat/${response.id}`);
-                // Or using window.location
-                // window.location.href = `/chat/${response.id}`;
             }
         } catch (error) {
             setToast({
@@ -128,8 +141,11 @@ export default function Build() {
         }
     };
 
-    // Simplified module rendering
-    const renderModule = (type: ModuleType, module: any = null) => {
+    const renderModule = (
+        type: ModuleType,
+        module: any = null,
+        showDelete = false
+    ) => {
         const isSelected = module
             ? type === "knowledge"
                 ? selectedModules.knowledge.some(
@@ -148,7 +164,7 @@ export default function Build() {
                             isCompact={true}
                             onSelect={() => handleSelectModule(type, module)}
                         />
-                        {isSelected && (
+                        {isSelected && showDelete && (
                             <button
                                 onClick={() =>
                                     removeModule(type, module.onChainId)
@@ -169,7 +185,7 @@ export default function Build() {
     };
 
     return (
-        <div className="grid grid-cols-[400px,1fr] gap-6 p-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[400px,1fr] gap-6 p-6 h-full">
             {/* Assembly Area */}
             <div className="border border-gray-700 rounded-lg p-4 bg-gray-900/50">
                 <h2 className="text-lg font-bold mb-4 text-gray-100">
@@ -182,37 +198,45 @@ export default function Build() {
                         <h3 className="text-sm font-medium text-gray-400 mb-2">
                             Character Module
                         </h3>
-                        {renderModule("character", selectedModules.character)}
+                        {renderModule(
+                            "character",
+                            selectedModules.character,
+                            true
+                        )}
                     </div>
 
-                    {/* Optional Modules */}
+                    {/* Knowledge Modules */}
                     <div className="border-b border-gray-700 pb-4">
                         <h3 className="text-sm font-medium text-gray-400 mb-2">
                             Knowledge Modules
                         </h3>
                         <div className="space-y-2">
                             {selectedModules.knowledge.map((module) =>
-                                renderModule("knowledge", module)
+                                renderModule("knowledge", module, true)
                             )}
                             {renderModule("knowledge")}
                         </div>
                     </div>
 
-                    {/* Speech and Tone (Optional but paired) */}
+                    {/* Speech and Tone */}
                     <div className="border-b border-gray-700 pb-4">
                         <h3 className="text-sm font-medium text-gray-400 mb-2">
                             Voice & Tone (Optional)
                         </h3>
                         <div className="space-y-2">
-                            {renderModule("speech", selectedModules.speech)}
-                            {renderModule("tone", selectedModules.tone)}
+                            {renderModule(
+                                "speech",
+                                selectedModules.speech,
+                                true
+                            )}
+                            {renderModule("tone", selectedModules.tone, true)}
                         </div>
                     </div>
 
                     {/* Memory Selection */}
-                    <div className="border-t border-gray-700 pt-4">
-                        <h3 className="text-sm font-medium text-gray-400 mb-4">
-                            Agent Memory
+                    <div className="mt-4 border-t border-gray-700 pt-4">
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">
+                            Agent Memory <span className="text-red-500">*</span>
                         </h3>
                         <MemoryCarousel
                             memories={mockModules.memory}
@@ -220,39 +244,49 @@ export default function Build() {
                                 handleSelectModule("memory", memory)
                             }
                             selectedMemory={selectedModules.memory}
+                            defaultSelected={mockModules.memory[0]}
                         />
                     </div>
-                </div>
 
-                <button
-                    onClick={handleInstantiate}
-                    disabled={!canInstantiate || createAgentMutation.isPending}
-                    className={`mt-4 w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                        canInstantiate && !createAgentMutation.isPending
-                            ? "bg-blue-600 hover:bg-blue-700"
-                            : "bg-gray-700 cursor-not-allowed"
-                    }`}
-                >
-                    {createAgentMutation.isPending
-                        ? "Creating Agent..."
-                        : "Instantiate Agent"}
-                </button>
+                    {/* Instantiate Button */}
+                    <button
+                        onClick={handleInstantiate}
+                        disabled={
+                            !canInstantiate || createAgentMutation.isPending
+                        }
+                        className={`mt-4 w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                            canInstantiate && !createAgentMutation.isPending
+                                ? "bg-blue-600 hover:bg-blue-700"
+                                : "bg-gray-700 cursor-not-allowed"
+                        }`}
+                    >
+                        {createAgentMutation.isPending
+                            ? "Creating Agent..."
+                            : "Instantiate Agent"}
+                    </button>
+                </div>
             </div>
 
             {/* Module Selection */}
             <div className="space-y-6 overflow-auto">
-                {Object.entries(mockModules).map(([type, modules]) => (
-                    <div key={type}>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-100 capitalize">
-                            {type} Modules
-                        </h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            {modules.map((module) =>
-                                renderModule(type as ModuleType, module)
-                            )}
+                {Object.entries(mockModules)
+                    .filter(([type]) => type !== "memory")
+                    .map(([type, modules]) => (
+                        <div key={type}>
+                            <h3 className="text-lg font-semibold mb-4 text-gray-100 capitalize">
+                                {type} Modules
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {modules.map((module) =>
+                                    renderModule(
+                                        type as ModuleType,
+                                        module,
+                                        false
+                                    )
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
             </div>
 
             {toast && (

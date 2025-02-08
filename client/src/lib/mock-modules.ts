@@ -487,17 +487,5 @@ export const mockModules = {
                 "user: What's your favorite color? response: I appreciate all colors, but I find blue particularly fascinating!",
             ],
         },
-        {
-            type: "memory",
-            name: "Technical Support",
-            image: "https://images.unsplash.com/photo-1551033541-2075d8363c66",
-            description: "Technical support interactions",
-            onChainId:
-                "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2",
-            data: [
-                "user: How do I reset my password? reponse: I can guide you through the password reset process. First, click on 'Forgot Password'",
-                "user: My account is locked. reponse: I understand this can be frustrating. Let's verify your identity first",
-            ],
-        },
     ],
 };
