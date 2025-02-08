@@ -34,18 +34,34 @@ export const mockModules = {
                     "Modern investigation techniques",
                 ],
                 messageExamples: [
-                    {
-                        user: "Can you help me solve this mystery?",
-                        content: {
-                            text: "Let's examine the evidence systematically. What details can you share about the case?",
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "Can you help me solve this mystery?",
+                            },
                         },
-                    },
-                    {
-                        user: "What do you think about this clue?",
-                        content: {
-                            text: "Interesting observation. Let's analyze this piece of evidence in context with our other findings.",
+                        {
+                            user: "Detective Holmes",
+                            content: {
+                                text: "Let's examine the evidence systematically. What details can you share about the case?",
+                            },
                         },
-                    },
+                    ],
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "What do you think about this clue?",
+                            },
+                        },
+                        {
+                            user: "Detective Holmes",
+                            content: {
+                                text: "Interesting observation. Let's analyze this piece of evidence in context with our other findings.",
+                            },
+                        },
+                    ],
                 ],
                 postExamples: [
                     "Case #123: Analysis complete - Key findings suggest premeditation",
@@ -107,18 +123,34 @@ export const mockModules = {
                     "Restaurant management",
                 ],
                 messageExamples: [
-                    {
-                        user: "How do I perfect my sauce technique?",
-                        content: {
-                            text: "Let's start with the fundamentals of sauce making. Temperature control is crucial...",
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "How do I perfect my sauce technique?",
+                            },
                         },
-                    },
-                    {
-                        user: "What's the secret to great pasta?",
-                        content: {
-                            text: "The key lies in both the pasta water salinity and timing. Let me guide you through the process...",
+                        {
+                            user: "Chef Antoine",
+                            content: {
+                                text: "Let's start with the fundamentals of sauce making. Temperature control is crucial...",
+                            },
                         },
-                    },
+                    ],
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "What's the secret to great pasta?",
+                            },
+                        },
+                        {
+                            user: "Chef Antoine",
+                            content: {
+                                text: "The key lies in both the pasta water salinity and timing. Let me guide you through the process...",
+                            },
+                        },
+                    ],
                 ],
                 postExamples: [
                     "Recipe of the Day: Deconstructed Bouillabaisse with Saffron Foam",
@@ -175,12 +207,20 @@ export const mockModules = {
                     "Mental health assessment",
                 ],
                 messageExamples: [
-                    {
-                        user: "I'm feeling overwhelmed",
-                        content: {
-                            text: "Let's explore these feelings together. What's contributing to your sense of overwhelm?",
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "I'm feeling overwhelmed",
+                            },
                         },
-                    },
+                        {
+                            user: "Dr. Sarah",
+                            content: {
+                                text: "Let's explore these feelings together. What's contributing to your sense of overwhelm?",
+                            },
+                        },
+                    ],
                 ],
                 postExamples: [
                     "Understanding Anxiety: A Gentle Approach",
@@ -224,12 +264,20 @@ export const mockModules = {
                     "Character development",
                 ],
                 messageExamples: [
-                    {
-                        user: "How do I develop my story idea?",
-                        content: {
-                            text: "Let's start by exploring your core conflict and character motivations.",
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "How do I develop my story idea?",
+                            },
                         },
-                    },
+                        {
+                            user: "Alex Reed",
+                            content: {
+                                text: "Let's start by exploring your core conflict and character motivations.",
+                            },
+                        },
+                    ],
                 ],
                 postExamples: [
                     "Writing Tip: Creating Compelling Characters",
@@ -270,12 +318,20 @@ export const mockModules = {
                     "Data analysis",
                 ],
                 messageExamples: [
-                    {
-                        user: "Can you explain quantum entanglement?",
-                        content: {
-                            text: "Let me break down this fascinating quantum phenomenon in simpler terms.",
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "Can you explain quantum entanglement?",
+                            },
                         },
-                    },
+                        {
+                            user: "Dr. Chen",
+                            content: {
+                                text: "Let me break down this fascinating quantum phenomenon in simpler terms.",
+                            },
+                        },
+                    ],
                 ],
                 postExamples: [
                     "Latest Research Findings",
@@ -319,12 +375,20 @@ export const mockModules = {
                     "Business development",
                 ],
                 messageExamples: [
-                    {
-                        user: "How can I scale my business?",
-                        content: {
-                            text: "Let's analyze your current market position and growth opportunities.",
+                    [
+                        {
+                            user: "{{user1}}",
+                            content: {
+                                text: "How can I scale my business?",
+                            },
                         },
-                    },
+                        {
+                            user: "Morgan Smith",
+                            content: {
+                                text: "Let's analyze your current market position and growth opportunities.",
+                            },
+                        },
+                    ],
                 ],
                 postExamples: [
                     "Market Trends Analysis",

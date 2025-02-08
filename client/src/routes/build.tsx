@@ -2,190 +2,227 @@ import { useState } from "react";
 import { ModuleCard } from "@/components/module-card";
 import { mockModules } from "@/lib/mock-modules";
 import { MemoryCarousel } from "@/components/ui/memory-carousel";
+import { useMutation } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api";
+import { Toast } from "@/components/ui/toast";
+
+type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
+
+interface SelectedModules {
+    character: any;
+    knowledge: any[];
+    speech: any | null;
+    tone: any | null;
+    memory: any | null;
+}
 
 export default function Build() {
-    const [selectedModules, setSelectedModules] = useState({
+    const [selectedModules, setSelectedModules] = useState<SelectedModules>({
         character: null,
-        knowledge: [], // Array for multiple knowledge modules
+        knowledge: [],
         speech: null,
         tone: null,
         memory: null,
     });
-    const [memoryStickPlugged, setMemoryStickPlugged] = useState(false);
+    const [toast, setToast] = useState<{
+        message: string;
+        type: "success" | "error";
+    } | null>(null);
 
-    const handleSelectModule = (type, module) => {
-        setSelectedModules((prev) => {
-            if (type === "knowledge") {
-                // Add to knowledge array if not already present
-                if (
-                    !prev.knowledge.find(
-                        (m) => m.onChainId === module.onChainId
-                    )
-                ) {
-                    return {
-                        ...prev,
-                        knowledge: [...prev.knowledge, module],
-                    };
-                }
-                return prev;
-            }
-            // For other types, just replace the current selection
-            return {
-                ...prev,
-                [type]: module,
-            };
-        });
-    };
+    const createAgentMutation = useMutation({
+        mutationFn: (characterJson: any) =>
+            apiClient.post("/agent/start", { characterJson }),
+        onSuccess: () => {
+            setToast({
+                message: "Agent created successfully",
+                type: "success",
+            });
+        },
+        onError: (error) => {
+            setToast({
+                message: `Failed to create agent: ${error.message}`,
+                type: "error",
+            });
+        },
+    });
 
-    const removeKnowledge = (onChainId: string) => {
+    const handleSelectModule = (type: ModuleType, module: any) => {
         setSelectedModules((prev) => ({
             ...prev,
-            knowledge: prev.knowledge.filter((m) => m.onChainId !== onChainId),
+            [type]: type === "knowledge" ? [...prev.knowledge, module] : module,
         }));
     };
 
-    const isComplete =
+    const removeModule = (type: ModuleType, onChainId?: string) => {
+        setSelectedModules((prev) => ({
+            ...prev,
+            [type]:
+                type === "knowledge"
+                    ? prev.knowledge.filter((m) => m.onChainId !== onChainId)
+                    : null,
+        }));
+    };
+
+    // Simplified instantiation check
+    const canInstantiate =
         selectedModules.character &&
-        selectedModules.speech &&
-        selectedModules.tone &&
-        memoryStickPlugged;
+        // Speech and tone must either both be selected or both be null
+        ((selectedModules.speech === null && selectedModules.tone === null) ||
+            (selectedModules.speech && selectedModules.tone));
+
+    const handleInstantiate = () => {
+        if (!canInstantiate) return;
+
+        try {
+            let finalCharacter = { ...selectedModules.character.data };
+
+            // Add knowledge
+            if (selectedModules.knowledge.length > 0) {
+                finalCharacter.knowledge = [
+                    ...(finalCharacter.knowledge || []),
+                    ...selectedModules.knowledge.flatMap(
+                        (module) => module.data
+                    ),
+                ];
+            }
+
+            // Add memory
+            if (selectedModules.memory) {
+                finalCharacter.knowledge = [
+                    ...(finalCharacter.knowledge || []),
+                    ...selectedModules.memory.data.map(
+                        (item) => `Memory: ${item}`
+                    ),
+                ];
+            }
+
+            // Add speech and tone if both are selected
+            if (selectedModules.speech && selectedModules.tone) {
+                finalCharacter.speech = selectedModules.speech.data || {};
+                finalCharacter.tone = selectedModules.tone.data || {};
+            }
+
+            createAgentMutation.mutate(finalCharacter);
+        } catch (error) {
+            setToast({
+                message: "Error preparing agent configuration",
+                type: "error",
+            });
+        }
+    };
+
+    // Simplified module rendering
+    const renderModule = (type: ModuleType, module: any = null) => {
+        const isSelected = module
+            ? type === "knowledge"
+                ? selectedModules.knowledge.some(
+                      (m) => m.onChainId === module.onChainId
+                  )
+                : selectedModules[type]?.onChainId === module.onChainId
+            : false;
+
+        return (
+            <div className="relative">
+                {module ? (
+                    <>
+                        <ModuleCard
+                            {...module}
+                            isSelected={isSelected}
+                            isCompact={true}
+                            onSelect={() => handleSelectModule(type, module)}
+                        />
+                        {isSelected && (
+                            <button
+                                onClick={() =>
+                                    removeModule(type, module.onChainId)
+                                }
+                                className="absolute top-3 right-4 w-6 h-6 flex items-center justify-center bg-red-600 rounded-full text-white hover:bg-red-700"
+                            >
+                                ×
+                            </button>
+                        )}
+                    </>
+                ) : (
+                    <div className="h-16 flex items-center justify-center text-gray-500 border border-dashed border-gray-700 rounded-lg text-sm">
+                        Select a {type} module
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="grid grid-cols-[400px,1fr] gap-6 p-6 h-full">
-            {/* Left side - Assembly Area - now narrower */}
+            {/* Assembly Area */}
             <div className="border border-gray-700 rounded-lg p-4 bg-gray-900/50">
                 <h2 className="text-lg font-bold mb-4 text-gray-100">
                     Assembly Area
                 </h2>
+
                 <div className="space-y-4">
-                    {/* Character Module */}
+                    {/* Required Modules */}
                     <div className="border-b border-gray-700 pb-4">
                         <h3 className="text-sm font-medium text-gray-400 mb-2">
                             Character Module
                         </h3>
-                        {selectedModules.character ? (
-                            <div className="relative">
-                                <ModuleCard
-                                    {...selectedModules.character}
-                                    isSelected
-                                    isCompact
-                                />
-                                <button
-                                    onClick={() =>
-                                        setSelectedModules((prev) => ({
-                                            ...prev,
-                                            character: null,
-                                        }))
-                                    }
-                                    className="absolute top-3 right-4 w-6 h-6 flex items-center justify-center bg-red-600 rounded-full text-white hover:bg-red-700"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="h-16 flex items-center justify-center text-gray-500 border border-dashed border-gray-700 rounded-lg text-sm">
-                                Select a character module
-                            </div>
-                        )}
+                        {renderModule("character", selectedModules.character)}
                     </div>
 
-                    {/* Knowledge Modules */}
+                    {/* Optional Modules */}
                     <div className="border-b border-gray-700 pb-4">
                         <h3 className="text-sm font-medium text-gray-400 mb-2">
                             Knowledge Modules
                         </h3>
                         <div className="space-y-2">
-                            {selectedModules.knowledge.map((module) => (
-                                <div
-                                    key={module.onChainId}
-                                    className="relative"
-                                >
-                                    <ModuleCard
-                                        {...module}
-                                        isSelected
-                                        isCompact
-                                    />
-                                    <button
-                                        onClick={() =>
-                                            removeKnowledge(module.onChainId)
-                                        }
-                                        className="absolute top-3 right-4 w-6 h-6 bg-red-600 rounded-full text-white hover:bg-red-700"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ))}
-                            <div className="h-16 flex items-center justify-center text-gray-500 border border-dashed border-gray-700 rounded-lg text-sm">
-                                Add knowledge modules
-                            </div>
+                            {selectedModules.knowledge.map((module) =>
+                                renderModule("knowledge", module)
+                            )}
+                            {renderModule("knowledge")}
                         </div>
                     </div>
 
-                    {/* Speech and Tone Modules */}
-                    {["speech", "tone"].map((type) => (
-                        <div
-                            key={type}
-                            className="border-b border-gray-700 pb-4"
-                        >
-                            <h3 className="text-sm font-medium text-gray-400 mb-2 capitalize">
-                                {type} Module
-                            </h3>
-                            {selectedModules[type] ? (
-                                <div className="relative">
-                                    <ModuleCard
-                                        {...selectedModules[type]}
-                                        isSelected
-                                        isCompact
-                                    />
-                                    <button
-                                        onClick={() =>
-                                            setSelectedModules((prev) => ({
-                                                ...prev,
-                                                [type]: null,
-                                            }))
-                                        }
-                                        className="absolute top-2 right-2 p-1 bg-red-600 rounded-full text-white hover:bg-red-700"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="h-16 flex items-center justify-center text-gray-500 border border-dashed border-gray-700 rounded-lg text-sm">
-                                    Select a {type} module
-                                </div>
-                            )}
+                    {/* Speech and Tone (Optional but paired) */}
+                    <div className="border-b border-gray-700 pb-4">
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">
+                            Voice & Tone (Optional)
+                        </h3>
+                        <div className="space-y-2">
+                            {renderModule("speech", selectedModules.speech)}
+                            {renderModule("tone", selectedModules.tone)}
                         </div>
-                    ))}
+                    </div>
+
+                    {/* Memory Selection */}
+                    <div className="border-t border-gray-700 pt-4">
+                        <h3 className="text-sm font-medium text-gray-400 mb-4">
+                            Agent Memory
+                        </h3>
+                        <MemoryCarousel
+                            memories={mockModules.memory}
+                            onSelect={(memory) =>
+                                handleSelectModule("memory", memory)
+                            }
+                            selectedMemory={selectedModules.memory}
+                        />
+                    </div>
                 </div>
 
-                {/* Agent Memory Selection */}
-                <div className="mt-4 border-t border-gray-700 pt-4">
-                    <h3 className="text-sm font-medium text-gray-400 mb-4">
-                        Agent Memory
-                    </h3>
-                    <MemoryCarousel
-                        memories={mockModules.memory}
-                        onSelect={(memory) =>
-                            handleSelectModule("memory", memory)
-                        }
-                        selectedMemory={selectedModules.memory}
-                    />
-                </div>
-
-                {/* Instantiate Button */}
                 <button
-                    className={`mt-4 w-full py-2.5 px-4 rounded-lg font-medium transition-colors ${
-                        isComplete
+                    onClick={handleInstantiate}
+                    disabled={!canInstantiate || createAgentMutation.isPending}
+                    className={`mt-4 w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                        canInstantiate && !createAgentMutation.isPending
                             ? "bg-blue-600 hover:bg-blue-700"
                             : "bg-gray-700 cursor-not-allowed"
                     }`}
-                    disabled={!isComplete}
                 >
-                    Instantiate Agent
+                    {createAgentMutation.isPending
+                        ? "Creating Agent..."
+                        : "Instantiate Agent"}
                 </button>
             </div>
 
-            {/* Right side - Module Selection */}
+            {/* Module Selection */}
             <div className="space-y-6 overflow-auto">
                 {Object.entries(mockModules).map(([type, modules]) => (
                     <div key={type}>
@@ -193,30 +230,21 @@ export default function Build() {
                             {type} Modules
                         </h3>
                         <div className="grid grid-cols-3 gap-4">
-                            {modules.map((module) => (
-                                <ModuleCard
-                                    key={module.onChainId}
-                                    {...module}
-                                    onSelect={() =>
-                                        handleSelectModule(type, module)
-                                    }
-                                    isSelected={
-                                        type === "knowledge"
-                                            ? selectedModules.knowledge.some(
-                                                  (m) =>
-                                                      m.onChainId ===
-                                                      module.onChainId
-                                              )
-                                            : selectedModules[type]
-                                                  ?.onChainId ===
-                                              module.onChainId
-                                    }
-                                />
-                            ))}
+                            {modules.map((module) =>
+                                renderModule(type as ModuleType, module)
+                            )}
                         </div>
                     </div>
                 ))}
             </div>
+
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 }
