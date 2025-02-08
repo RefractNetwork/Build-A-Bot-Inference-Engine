@@ -124,11 +124,14 @@ export default function Build() {
                     text: "I'm doing great! How can I help you today?",
                     user: "assistant",
                     createdAt: Date.now() - 1000 * 60 * 4, // 4 minutes ago
-                }
+                },
             ];
 
             // Create the agent with initial memories
-            const response = await apiClient.startAgent(finalCharacter, initialMemories);
+            const response = await apiClient.startAgent(
+                finalCharacter,
+                initialMemories
+            );
 
             if (response.id) {
                 navigate(`/chat/${response.id}`);
@@ -211,9 +214,11 @@ export default function Build() {
                             Knowledge Modules
                         </h3>
                         <div className="space-y-2">
-                            {selectedModules.knowledge.map((module) =>
-                                renderModule("knowledge", module, true)
-                            )}
+                            {selectedModules.knowledge.map((module) => (
+                                <div key={module.onChainId}>
+                                    {renderModule("knowledge", module, true)}
+                                </div>
+                            ))}
                             {renderModule("knowledge")}
                         </div>
                     </div>
@@ -277,13 +282,15 @@ export default function Build() {
                                 {type} Modules
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {modules.map((module) =>
-                                    renderModule(
-                                        type as ModuleType,
-                                        module,
-                                        false
-                                    )
-                                )}
+                                {modules.map((module) => (
+                                    <div key={module.onChainId}>
+                                        {renderModule(
+                                            type as ModuleType,
+                                            module,
+                                            false
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     ))}

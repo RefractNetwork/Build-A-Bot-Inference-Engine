@@ -1,4 +1,3 @@
-import info from "@/lib/info.json";
 import {
     Sidebar,
     SidebarContent,
@@ -41,7 +40,7 @@ export function AppSidebar() {
                                     <span className="font-bold">
                                         Refract Eliza
                                     </span>
-                                    <span className="mt-1">Build a Bear</span>
+                                    <span className="mt-1">Build a Bot</span>
 
                                     {/* <span className="">v{info?.version}</span> */}
                                 </div>
@@ -64,7 +63,7 @@ export function AppSidebar() {
                                         )}
                                     >
                                         <Beaker />
-                                        <span>Build a Bear</span>
+                                        <span>Build a Bot</span>
                                     </SidebarMenuButton>
                                 </NavLink>
                             </SidebarMenuItem>
