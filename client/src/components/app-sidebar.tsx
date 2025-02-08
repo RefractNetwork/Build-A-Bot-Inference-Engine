@@ -38,10 +38,12 @@ export function AppSidebar() {
                                     />
                                 </div>
                                 <div className="flex flex-col gap-0.5 leading-none">
-                                    <span className="font-semibold">
+                                    <span className="font-bold">
                                         Refract Eliza
                                     </span>
-                                    <span className="">v{info?.version}</span>
+                                    <span className="mt-1">Build a Bear</span>
+
+                                    {/* <span className="">v{info?.version}</span> */}
                                 </div>
                             </NavLink>
                         </SidebarMenuButton>

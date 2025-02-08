@@ -37,7 +37,7 @@ export function ModuleCard({
         <>
             <div
                 onClick={() => setShowDetails(true)}
-                className={`relative border border-gray-700 bg-gray-900 rounded-lg p-3 cursor-pointer hover:border-blue-500 transition-colors ${
+                className={`relative border border-gray-700 bg-gray-900 rounded-lg p-3 cursor-pointer hover:border-gray-500 transition-colors ${
                     isSelected ? "border-green-500" : ""
                 } ${isCompact ? "scale-95" : ""}`}
             >
@@ -105,7 +105,7 @@ export function ModuleCard({
                                 onSelect?.();
                                 setShowDetails(false);
                             }}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                         >
                             {type === "knowledge"
                                 ? "Add Knowledge"

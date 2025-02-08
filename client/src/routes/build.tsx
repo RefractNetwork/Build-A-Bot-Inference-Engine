@@ -77,7 +77,7 @@ export default function Build() {
                                             character: null,
                                         }))
                                     }
-                                    className="absolute top-2 right-2 p-1 bg-red-600 rounded-full text-white hover:bg-red-700"
+                                    className="absolute top-3 right-4 w-6 h-6 flex items-center justify-center bg-red-600 rounded-full text-white hover:bg-red-700"
                                 >
                                     ×
                                 </button>
@@ -109,7 +109,7 @@ export default function Build() {
                                         onClick={() =>
                                             removeKnowledge(module.onChainId)
                                         }
-                                        className="absolute top-2 right-2 p-1 bg-red-600 rounded-full text-white hover:bg-red-700"
+                                        className="absolute top-3 right-4 w-6 h-6 bg-red-600 rounded-full text-white hover:bg-red-700"
                                     >
                                         ×
                                     </button>
