@@ -64,7 +64,9 @@ export function AppSidebar() {
                                 <div>
                                     {Array.from({ length: 5 }).map(
                                         (_, _index) => (
-                                            <SidebarMenuItem key={"skeleton-item"}>
+                                            <SidebarMenuItem
+                                                key={"skeleton-item"}
+                                            >
                                                 <SidebarMenuSkeleton />
                                             </SidebarMenuItem>
                                         )
@@ -100,21 +102,21 @@ export function AppSidebar() {
             </SidebarContent>
             <SidebarFooter>
                 <SidebarMenu>
-                    <SidebarMenuItem>
-                        <NavLink
-                            to="https://elizaos.github.io/eliza/docs/intro/"
-                            target="_blank"
-                        >
-                            <SidebarMenuButton>
-                                <Book /> Documentation
-                            </SidebarMenuButton>
-                        </NavLink>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton disabled>
-                            <Cog /> Settings
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    {/* <SidebarMenuItem> */}
+                    {/*     <NavLink */}
+                    {/*         to="https://elizaos.github.io/eliza/docs/intro/" */}
+                    {/*         target="_blank" */}
+                    {/*     > */}
+                    {/*         <SidebarMenuButton> */}
+                    {/*             <Book /> Documentation */}
+                    {/*         </SidebarMenuButton> */}
+                    {/*     </NavLink> */}
+                    {/* </SidebarMenuItem> */}
+                    {/* <SidebarMenuItem> */}
+                    {/*     <SidebarMenuButton disabled> */}
+                    {/*         <Cog /> Settings */}
+                    {/*     </SidebarMenuButton> */}
+                    {/* </SidebarMenuItem> */}
                     <ConnectionStatus />
                 </SidebarMenu>
             </SidebarFooter>
