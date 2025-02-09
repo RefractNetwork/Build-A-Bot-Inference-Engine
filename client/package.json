@@ -29,6 +29,7 @@
 		"clsx": "2.1.1",
 		"dayjs": "^1.11.13",
 		"framer-motion": "^12.4.1",
+		"js-cookie": "^3.0.5",
 		"lucide-react": "^0.469.0",
 		"react": "^19.0.0",
 		"react-aiwriter": "^1.0.0",
@@ -43,6 +44,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.17.0",
+		"@types/js-cookie": "^3.0.6",
 		"@types/node": "^22.10.5",
 		"@types/react": "^19.0.3",
 		"@types/react-dom": "^19.0.2",
