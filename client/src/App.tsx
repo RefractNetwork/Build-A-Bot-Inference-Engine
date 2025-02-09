@@ -19,6 +19,7 @@ const queryClient = new QueryClient({
 
 import { AuthGuard } from "./components/auth-guard";
 import Build from "./routes/build";
+import Marketplace from "./routes/marketplace";
 
 function App() {
     return (
@@ -52,6 +53,10 @@ function App() {
                                             <Route
                                                 path="settings/:agentId"
                                                 element={<Overview />}
+                                            />
+                                            <Route
+                                                path="marketplace"
+                                                element={<Marketplace />}
                                             />
                                         </Routes>
                                     </div>

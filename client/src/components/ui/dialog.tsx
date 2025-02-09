@@ -88,7 +88,7 @@ export function DialogContent({
 }) {
     return (
         <div
-            className={`relative transform overflow-hidden rounded-lg bg-gray-900 border border-gray-700 px-6 py-5 text-left shadow-xl transition-all max-w-2xl mx-auto ${className}`}
+            className={`relative transform overflow-hidden rounded-lg bg-gray-900 border border-gray-700 px-6 py-5 text-left shadow-xl transition-all sm:max-w-lg mx-auto ${className}`}
         >
             {children}
         </div>
@@ -105,33 +105,18 @@ export function DialogHeader({
     return <div className={`mb-4 ${className}`}>{children}</div>;
 }
 
+// Remove the complex DialogTitle and replace with a simpler version if needed
 export function DialogTitle({
-    image,
-    title,
-    subtitle,
+    children,
     className = "",
 }: {
-    image: string;
-    title: string;
-    subtitle: string;
+    children: React.ReactNode;
     className?: string;
 }) {
     return (
-        <div className={`flex items-start gap-4 ${className}`}>
-            <div className="w-24 h-24 flex-shrink-0">
-                <img
-                    src={image}
-                    alt={title}
-                    className="w-full h-full object-cover rounded-lg"
-                />
-            </div>
-            <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-semibold text-gray-100 mb-1">
-                    {title}
-                </h3>
-                <p className="text-sm text-gray-400">{subtitle}</p>
-            </div>
-        </div>
+        <h3 className={`text-lg font-semibold text-gray-100 ${className}`}>
+            {children}
+        </h3>
     );
 }
 

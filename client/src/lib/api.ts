@@ -130,6 +130,18 @@ export const apiClient = {
         }),
 
     // BAB server
+    // List all modules
+    listModules: async (type?: string) => {
+        const url = new URL(`${babServerUrl}/api/listModules`);
+        if (type) {
+            url.searchParams.append("type", type);
+        }
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("Failed to fetch modules list");
+        }
+        return response.json();
+    },
     createModule: async (moduleData: {
         moduleId: string;
         name: string;
