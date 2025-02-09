@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import {
     ChatBubble,
     ChatBubbleMessage,
-    // ChatBubbleTimestamp,
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
@@ -23,6 +22,7 @@ import type { IAttachment } from "@/types";
 import { AudioRecorder } from "./audio-recorder";
 import { Badge } from "./ui/badge";
 import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
+import { mockModules } from "@/lib/mock-modules";
 
 type ExtraContentFields = {
     user: string;
@@ -39,8 +39,8 @@ type AnimatedDivProps = AnimatedProps<{ style: React.CSSProperties }> & {
 function cleanMessage(text: string): string {
     // Remove <chatlog> tags and their contents, handling both closing tag formats
     return text
-        .replace(/<chatlog>.*?<\/chatlog>/gs, '')  // Handle </chatlog>
-        .replace(/<chatlog>.*?<chatlog\/>/gs, '')  // Handle <chatlog/>
+        .replace(/<chatlog>.*?<\/chatlog>/gs, "") // Handle </chatlog>
+        .replace(/<chatlog>.*?<chatlog\/>/gs, "") // Handle <chatlog/>
         .trim();
 }
 
@@ -63,22 +63,17 @@ export default function Page({ agentId }: { agentId: UUID }) {
         });
 
     useEffect(() => {
-        const initialMessages: ContentWithUser[] = [
-            {
-                text: "I have a question about React",
-                user: "user",
-                createdAt: Date.now() - 2000,
-            },
-            {
-                text: "Hello! How can I help you today?",
-                user: "system",
-                createdAt: Date.now() - 1000,
-            },
-        ];
+        // Get the memory data from mockModules and convert to ContentWithUser format
+        const initialMessages: ContentWithUser[] =
+            mockModules.memory[0].data.map((memoryItem) => ({
+                text: memoryItem.text,
+                user: memoryItem.user === "system" ? "system" : "user", // Map memory user to correct type
+                createdAt: memoryItem.createdAt,
+            }));
 
         queryClient.setQueryData(
             ["messages", agentId],
-            (old: ContentWithUser[] = []) => 
+            (old: ContentWithUser[] = []) =>
                 old.length === 0 ? initialMessages : old
         );
     }, [agentId, queryClient]);
@@ -236,7 +231,9 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                         >
                                             {message?.user !== "user" ? (
                                                 <AIWriter>
-                                                    {cleanMessage(message?.text)}
+                                                    {cleanMessage(
+                                                        message?.text
+                                                    )}
                                                 </AIWriter>
                                             ) : (
                                                 cleanMessage(message?.text)

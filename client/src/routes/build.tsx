@@ -115,24 +115,23 @@ export default function Build() {
             }
 
             // Example initial chat history
-            const initialMemories = [
-                {
-                    text: "Hello! How are you?",
-                    user: "user",
-                    createdAt: Date.now() - 1000 * 60 * 5, // 5 minutes ago
-                },
-                {
-                    text: "I'm doing great! How can I help you today?",
-                    user: "assistant",
-                    createdAt: Date.now() - 1000 * 60 * 4, // 4 minutes ago
-                },
-            ];
+            // const initialMemories = [
+            //     {
+            //         text: `<chatlog>${selectedModules.memory.data.join(
+            //             "\n"
+            //         )}<chatlog/> Hello! How are you?`,
+            //         user: "user",
+            //         createdAt: Date.now() - 1000 * 60 * 5, // 5 minutes ago
+            //     },
+            //     {
+            //         text: "I'm doing great! How can I help you today?",
+            //         user: "assistant",
+            //         createdAt: Date.now() - 1000 * 60 * 4, // 4 minutes ago
+            //     },
+            // ];
 
             // Create the agent with initial memories
-            const response = await apiClient.startAgent(
-                finalCharacter
-                // initialMemories
-            );
+            const response = await apiClient.startAgent(finalCharacter);
 
             if (response.id) {
                 navigate(`/chat/${response.id}`);

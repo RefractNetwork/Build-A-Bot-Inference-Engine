@@ -1,12 +1,6 @@
 import * as React from "react";
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-// import { ChatMessage } from "@/types/chat";
-// import {
-//     ChatBubble,
-//     ChatBubbleMessage,
-//     // ChatBubbleTimestamp,
-// } from "./chat-bubble";
 
 interface ChatMessageListProps extends React.HTMLAttributes<HTMLDivElement> {
     scrollRef: React.RefObject<HTMLDivElement | null>;

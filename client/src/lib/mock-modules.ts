@@ -483,8 +483,26 @@ export const mockModules = {
             onChainId:
                 "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3",
             data: [
-                "user: How are you today? response: I'm doing well, thank you for asking! How can I help you today?",
-                "user: What's your favorite color? response: I appreciate all colors, but I find blue particularly fascinating!",
+                {
+                    text: "Hi there! I need help with React state management",
+                    user: "user",
+                    createdAt: Date.now() - 3000,
+                },
+                {
+                    text: "I'd be happy to help! What specific aspects of React state management are you struggling with?",
+                    user: "system",
+                    createdAt: Date.now() - 2500,
+                },
+                {
+                    text: "I'm trying to understand when to use useState vs useReducer",
+                    user: "user",
+                    createdAt: Date.now() - 2000,
+                },
+                {
+                    text: "That's a great question! useState is better for simple state management, while useReducer is preferred for complex state logic. Would you like me to explain the differences in detail?",
+                    user: "system",
+                    createdAt: Date.now() - 1500,
+                },
             ],
         },
     ],
