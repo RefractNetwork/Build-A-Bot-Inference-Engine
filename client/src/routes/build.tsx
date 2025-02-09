@@ -4,7 +4,6 @@ import { mockModules } from "@/lib/mock-modules";
 import { MemoryCarousel } from "@/components/ui/memory-carousel";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
-import { Toast } from "@/components/ui/toast";
 import { useNavigate } from "react-router";
 import Cookies from "js-cookie";
 
@@ -30,26 +29,10 @@ export default function Build() {
         tone: null,
         memory: mockModules.memory[0],
     });
-    const [toast, setToast] = useState<{
-        message: string;
-        type: "success" | "error";
-    } | null>(null);
 
     const createAgentMutation = useMutation({
         mutationFn: (characterJson: any) =>
             apiClient.post("/agent/start", { characterJson }),
-        onSuccess: () => {
-            setToast({
-                message: "Agent created successfully",
-                type: "success",
-            });
-        },
-        onError: (error) => {
-            setToast({
-                message: `Failed to create agent: ${error.message}`,
-                type: "error",
-            });
-        },
     });
 
     const handleSelectModule = (type: ModuleType, module: any) => {
@@ -116,10 +99,7 @@ export default function Build() {
                 navigate(`/chat/${response.id}?moduleId=${MEMORY_MODULE_ID}`);
             }
         } catch (error) {
-            setToast({
-                message: "Error creating agent: " + (error as Error).message,
-                type: "error",
-            });
+            console.error("Failed to create agent", error);
         }
     };
 
@@ -274,14 +254,6 @@ export default function Build() {
                         </div>
                     ))}
             </div>
-
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
         </div>
     );
 }
