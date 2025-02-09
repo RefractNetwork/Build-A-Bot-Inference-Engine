@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ModuleCard } from "@/components/module-card";
-import { mockModules } from "@/lib/mock-modules";
 // import { MemoryCarousel } from "@/components/ui/memory-carousel";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
@@ -19,9 +18,6 @@ interface SelectedModules {
     tone: any | null;
     memory: any | null;
 }
-
-const MEMORY_MODULE_ID =
-    "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
 
 const COOKIE_KEY = "build_config";
 
@@ -236,7 +232,7 @@ export default function Build() {
             (selectedModules.speech && selectedModules.tone));
 
     const handleInstantiate = async () => {
-        if (!selectedModules.character) return;
+        if (!selectedModules.character || !selectedModules.memory) return;
 
         try {
             // Start with the base character
@@ -263,15 +259,21 @@ export default function Build() {
             const response = await apiClient.startAgent(finalCharacter);
 
             if (response.id) {
-                // Store creation timestamp in cookie
+                // Store creation timestamp and memory module ID
                 Cookies.set(
                     `agent_${response.id}_created`,
                     Date.now().toString(),
                     { expires: 7 }
                 );
+                Cookies.set(
+                    `agent_${response.id}_memory`,
+                    selectedModules.memory.onChainId,
+                    { expires: 7 }
+                );
 
-                // Navigate to chat with both agent ID and memory module ID
-                navigate(`/chat/${response.id}?moduleId=${MEMORY_MODULE_ID}`);
+                navigate(
+                    `/chat/${response.id}?moduleId=${selectedModules.memory.onChainId}`
+                );
             }
         } catch (error) {
             console.error("Failed to create agent", error);
