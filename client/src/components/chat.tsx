@@ -7,7 +7,7 @@ import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
 import { useTransition, animated, type AnimatedProps } from "@react-spring/web";
 import { Paperclip, Send, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import type { Content, UUID } from "@elizaos/core";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
@@ -22,7 +22,6 @@ import type { IAttachment } from "@/types";
 import { AudioRecorder } from "./audio-recorder";
 import { Badge } from "./ui/badge";
 import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
-import { mockModules } from "@/lib/mock-modules";
 
 type ExtraContentFields = {
     user: string;
@@ -44,6 +43,7 @@ function cleanMessage(text: string): string {
 }
 
 export default function Page({ agentId }: { agentId: UUID }) {
+    // { memoryId }: { memoryId: any }
     const { toast } = useToast();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [input, setInput] = useState("");
@@ -62,27 +62,36 @@ export default function Page({ agentId }: { agentId: UUID }) {
         });
 
     useEffect(() => {
-        const initialMessages: ContentWithUser[] =
-            mockModules.memory[0].data.map((memoryItem) => ({
-                text: memoryItem.text,
-                user: memoryItem.user === "system" ? "system" : "user",
-                createdAt: memoryItem.createdAt,
-            }));
+        const loadMemoryModule = async () => {
+            try {
+                const moduleId = "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
+                const content = await apiClient.getMemoryModule(moduleId);
 
-        queryClient.setQueryData(
-            ["messages", agentId],
-            (old: ContentWithUser[] = []) =>
-                old.length === 0 ? initialMessages : old
-        );
+                // Convert the content object to an array and sort by createdAt
+                const initialMessages: ContentWithUser[] = Object.entries(content)
+                    .map(([_, item]: [string, any]) => ({
+                        text: item.text || "",
+                        user: item.user === "system" ? "assistant" : item.user, // Normalize system to assistant
+                        createdAt: item.createdAt || Date.now(),
+                        attachments: item.attachments || undefined,
+                    }))
+                    .filter(msg => msg.text && msg.user) // Filter out invalid messages
+                    .sort((a, b) => a.createdAt - b.createdAt);
+
+                if (initialMessages.length > 0) {
+                    queryClient.setQueryData(
+                        ["messages", agentId],
+                        (old: ContentWithUser[] = []) => 
+                            old.length === 0 ? initialMessages : old
+                    );
+                }
+            } catch (error) {
+                console.error("Failed to load memory module:", error);
+            }
+        };
+
+        loadMemoryModule();
     }, [agentId, queryClient]);
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [queryClient.getQueryData(["messages", agentId])]);
-
-    useEffect(() => {
-        scrollToBottom();
-    }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -106,18 +115,36 @@ export default function Page({ agentId }: { agentId: UUID }) {
               ]
             : undefined;
 
-        const newMessage = {
+        // Create user message with timestamp
+        const userMessage = {
             text: input,
             user: "user",
             createdAt: Date.now(),
             attachments,
         };
 
+        // Store user message immediately
+        const moduleId = "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
+        const userMessageToStore = {
+            [`message_${Date.now()}_user`]: {
+                text: input,
+                user: "user",
+                createdAt: Date.now(),
+                attachments,
+            }
+        };
+        
+        // Store user message in memory module
+        apiClient.appendMemoryModule(moduleId, userMessageToStore)
+            .catch(error => console.error('Failed to store user message:', error));
+
+        // Update UI with user message
         queryClient.setQueryData(
             ["messages", agentId],
-            (old: ContentWithUser[] = []) => [...old, newMessage]
+            (old: ContentWithUser[] = []) => [...old, userMessage]
         );
 
+        // Send message to agent
         sendMessageMutation.mutate({
             message: input,
             selectedFile: selectedFile ? selectedFile : null,
@@ -153,7 +180,10 @@ export default function Page({ agentId }: { agentId: UUID }) {
                 (msg) => !msg.isLoading
             );
 
-            const initialMessagesLength = mockModules.memory[0].data.length;
+            const moduleId =
+                "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
+            const content = await apiClient.getMemoryModule(moduleId);
+            const initialMessagesLength = Object.keys(content).length;
             const isFirstNewMessage =
                 actualMessages.length === initialMessagesLength + 1;
 
@@ -181,25 +211,37 @@ export default function Page({ agentId }: { agentId: UUID }) {
             );
             return Array.isArray(response) ? [response[0]] : [response];
         },
-        onSuccess: (newMessages: ContentWithUser[]) => {
-            queryClient.setQueryData(
-                ["messages", agentId],
-                (old: ContentWithUser[] = []) => [
-                    ...old,
-                    ...newMessages.map((msg) => ({
-                        ...msg,
-                        createdAt: Date.now(),
-                    })),
-                ]
-            );
-
-            // Update mock modules memory
-            const messagesToAppend = newMessages.map((msg) => ({
-                text: msg.text,
-                user: msg.user,
+        onSuccess: async (newMessages: ContentWithUser[]) => {
+            // Format new messages consistently
+            const formattedMessages = newMessages.map(msg => ({
+                ...msg,
+                user: msg.user === "system" ? "assistant" : msg.user,
                 createdAt: Date.now(),
             }));
-            mockModules.memory[0].data.push(...messagesToAppend);
+
+            // Update the messages in the UI
+            queryClient.setQueryData(
+                ["messages", agentId],
+                (old: ContentWithUser[] = []) => [...old, ...formattedMessages]
+            );
+
+            // Prepare assistant messages for memory storage
+            const moduleId = "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
+            const messagesToAppend = formattedMessages.reduce((acc, msg, index) => {
+                // Create a unique key for each message
+                const key = `message_${Date.now()}_${index}_assistant`;
+                return {
+                    ...acc,
+                    [key]: {
+                        text: msg.text,
+                        user: msg.user,
+                        createdAt: msg.createdAt,
+                        attachments: msg.attachments,
+                    }
+                };
+            }, {});
+
+            await apiClient.appendMemoryModule(moduleId, messagesToAppend);
         },
         onError: (e) => {
             toast({
@@ -217,9 +259,19 @@ export default function Page({ agentId }: { agentId: UUID }) {
         }
     };
 
-    const messages =
-        queryClient.getQueryData<ContentWithUser[]>(["messages", agentId]) ||
-        [];
+    // Simplified query with memoized options
+    const queryOptions = useMemo(() => ({
+        queryKey: ["messages", agentId] as const,
+        initialData: [] as ContentWithUser[],
+        staleTime: Infinity, // Prevent unnecessary refetches
+        onSuccess: (data: ContentWithUser[]) => {
+            if (data.length > 0) {
+                requestAnimationFrame(scrollToBottom);
+            }
+        },
+    }), [agentId, scrollToBottom]);
+
+    const { data: messages = [] } = useQuery(queryOptions);
 
     const transitions = useTransition(messages, {
         keys: (message) =>

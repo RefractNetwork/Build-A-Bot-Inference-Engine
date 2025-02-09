@@ -132,7 +132,6 @@ export const apiClient = {
     // BAB server
 
     // Get memory module content
-
     getMemoryModule: async (moduleId: string) => {
         const response = await fetch(
             `${babServerUrl}/api/getModule/${moduleId}`
@@ -145,7 +144,7 @@ export const apiClient = {
     },
 
     // Append to memory module
-    appendMemoryModule: async (moduleId: string, newMessages: any[]) => {
+    appendMemoryModule: async (moduleId: string, newMessages: Record<string, any>) => {
         const response = await fetch(`${babServerUrl}/api/appendModule`, {
             method: "POST",
             headers: {
