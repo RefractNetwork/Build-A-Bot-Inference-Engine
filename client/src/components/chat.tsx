@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
     ChatBubble,
     ChatBubbleMessage,
-    ChatBubbleTimestamp,
+    // ChatBubbleTimestamp,
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Content, UUID } from "@elizaos/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
-import { cn, moment } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import CopyButton from "./copy-button";
 import ChatTtsButton from "./ui/chat/chat-tts-button";
@@ -36,6 +36,14 @@ type AnimatedDivProps = AnimatedProps<{ style: React.CSSProperties }> & {
     children?: React.ReactNode;
 };
 
+function cleanMessage(text: string): string {
+    // Remove <chatlog> tags and their contents, handling both closing tag formats
+    return text
+        .replace(/<chatlog>.*?<\/chatlog>/gs, '')  // Handle </chatlog>
+        .replace(/<chatlog>.*?<chatlog\/>/gs, '')  // Handle <chatlog/>
+        .trim();
+}
+
 export default function Page({ agentId }: { agentId: UUID }) {
     const { toast } = useToast();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -49,10 +57,32 @@ export default function Page({ agentId }: { agentId: UUID }) {
     const getMessageVariant = (role: string) =>
         role !== "user" ? "received" : "sent";
 
-    const { scrollRef, isAtBottom, scrollToBottom, disableAutoScroll } = useAutoScroll({
-        smooth: true,
-    });
-   
+    const { scrollRef, isAtBottom, scrollToBottom, disableAutoScroll } =
+        useAutoScroll({
+            smooth: true,
+        });
+
+    useEffect(() => {
+        const initialMessages: ContentWithUser[] = [
+            {
+                text: "I have a question about React",
+                user: "user",
+                createdAt: Date.now() - 2000,
+            },
+            {
+                text: "Hello! How can I help you today?",
+                user: "system",
+                createdAt: Date.now() - 1000,
+            },
+        ];
+
+        queryClient.setQueryData(
+            ["messages", agentId],
+            (old: ContentWithUser[] = []) => 
+                old.length === 0 ? initialMessages : old
+        );
+    }, [agentId, queryClient]);
+
     useEffect(() => {
         scrollToBottom();
     }, [queryClient.getQueryData(["messages", agentId])]);
@@ -173,7 +203,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
     return (
         <div className="flex flex-col w-full h-[calc(100dvh)] p-4">
             <div className="flex-1 overflow-y-auto">
-                <ChatMessageList 
+                <ChatMessageList
                     scrollRef={scrollRef}
                     isAtBottom={isAtBottom}
                     scrollToBottom={scrollToBottom}
@@ -206,22 +236,26 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                         >
                                             {message?.user !== "user" ? (
                                                 <AIWriter>
-                                                    {message?.text}
+                                                    {cleanMessage(message?.text)}
                                                 </AIWriter>
                                             ) : (
-                                                message?.text
+                                                cleanMessage(message?.text)
                                             )}
                                             {/* Attachments */}
                                             <div>
                                                 {message?.attachments?.map(
-                                                    (attachment: IAttachment) => (
+                                                    (
+                                                        attachment: IAttachment
+                                                    ) => (
                                                         <div
                                                             className="flex flex-col gap-1 mt-2"
                                                             key={`${attachment.url}-${attachment.title}`}
                                                         >
                                                             <img
                                                                 alt="attachment"
-                                                                src={attachment.url}
+                                                                src={
+                                                                    attachment.url
+                                                                }
                                                                 width="100%"
                                                                 height="100%"
                                                                 className="w-64 rounded-md"
@@ -265,13 +299,6 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                                     <Badge variant="outline">
                                                         {message.action}
                                                     </Badge>
-                                                ) : null}
-                                                {message?.createdAt ? (
-                                                    <ChatBubbleTimestamp
-                                                        timestamp={moment(
-                                                            message?.createdAt
-                                                        ).format("LT")}
-                                                    />
                                                 ) : null}
                                             </div>
                                         </div>

@@ -5,7 +5,10 @@
         "rootDir": ".",
         "module": "ESNext",
         "moduleResolution": "Bundler",
-        "types": ["node", "jest"]
+        "types": ["node", "jest"],
+        "paths": {
+            "@elizaos/core": ["../packages/core/src"]
+        }
     },
     "ts-node": {
         "experimentalSpecifierResolution": "node",

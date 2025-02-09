@@ -1,6 +1,12 @@
 import * as React from "react";
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+// import { ChatMessage } from "@/types/chat";
+// import {
+//     ChatBubble,
+//     ChatBubbleMessage,
+//     // ChatBubbleTimestamp,
+// } from "./chat-bubble";
 
 interface ChatMessageListProps extends React.HTMLAttributes<HTMLDivElement> {
     scrollRef: React.RefObject<HTMLDivElement | null>;
@@ -11,12 +17,23 @@ interface ChatMessageListProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const ChatMessageList = React.forwardRef<HTMLDivElement, ChatMessageListProps>(
-    ({ className, children, scrollRef, isAtBottom, scrollToBottom, disableAutoScroll, ...props }) => {
+    (
+        {
+            className,
+            children,
+            scrollRef,
+            isAtBottom,
+            scrollToBottom,
+            disableAutoScroll,
+            ...props
+        },
+        ref
+    ) => {
         return (
             <div className="relative w-full h-full">
                 <div
                     className={`flex flex-col w-full h-full p-4 overflow-y-auto ${className}`}
-                    ref={scrollRef}
+                    ref={ref || scrollRef}
                     onWheel={disableAutoScroll}
                     onTouchMove={disableAutoScroll}
                     {...props}
@@ -26,9 +43,7 @@ const ChatMessageList = React.forwardRef<HTMLDivElement, ChatMessageListProps>(
 
                 {!isAtBottom && (
                     <Button
-                        onClick={() => {
-                            scrollToBottom();
-                        }}
+                        onClick={scrollToBottom}
                         size="icon"
                         variant="outline"
                         className="absolute bottom-2 left-1/2 transform -translate-x-1/2 inline-flex rounded-full shadow-md"
