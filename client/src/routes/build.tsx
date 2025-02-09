@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ModuleCard } from "@/components/module-card";
 import { mockModules } from "@/lib/mock-modules";
-import { MemoryCarousel } from "@/components/ui/memory-carousel";
+// import { MemoryCarousel } from "@/components/ui/memory-carousel";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { useNavigate } from "react-router";
 import Cookies from "js-cookie";
+import { useOwnedModules } from "@/hooks/useOwnedModuleInstances";
+import { Transaction } from "@mysten/sui/transactions";
+import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 
 type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
 
@@ -20,27 +23,199 @@ interface SelectedModules {
 const MEMORY_MODULE_ID =
     "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
 
+const COOKIE_KEY = "build_config";
+
 export default function Build() {
     const navigate = useNavigate();
-    const [selectedModules, setSelectedModules] = useState<SelectedModules>({
-        character: null,
-        knowledge: [],
-        speech: null,
-        tone: null,
-        memory: mockModules.memory[0],
+    const client = useSuiClient();
+    const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction({
+        execute: async ({ bytes, signature }) =>
+            await client.executeTransactionBlock({
+                transactionBlock: bytes,
+                signature,
+                options: {
+                    showRawEffects: true,
+                    showObjectChanges: true,
+                },
+            }),
     });
+
+    const {
+        data: ownedModules,
+        isLoading,
+        refetch: refetchModules,
+    } = useOwnedModules();
+
+    // Initialize state from cookie if available
+    const [selectedModules, setSelectedModules] = useState<SelectedModules>(
+        () => {
+            const savedConfig = Cookies.get(COOKIE_KEY);
+            if (!savedConfig) {
+                return {
+                    character: null,
+                    knowledge: [],
+                    speech: null,
+                    tone: null,
+                    memory: null,
+                };
+            }
+
+            const config = JSON.parse(savedConfig);
+
+            // Clean up configuration if modules are no longer owned
+            const cleanConfig = {
+                character:
+                    config.character &&
+                    ownedModules?.character?.some(
+                        (m) => m.onChainId === config.character.onChainId
+                    )
+                        ? config.character
+                        : null,
+                knowledge:
+                    config.knowledge?.filter((k) =>
+                        ownedModules?.knowledge?.some(
+                            (m) => m.onChainId === k.onChainId
+                        )
+                    ) || [],
+                speech:
+                    config.speech &&
+                    ownedModules?.speech?.some(
+                        (m) => m.onChainId === config.speech.onChainId
+                    )
+                        ? config.speech
+                        : null,
+                tone:
+                    config.tone &&
+                    ownedModules?.tone?.some(
+                        (m) => m.onChainId === config.tone.onChainId
+                    )
+                        ? config.tone
+                        : null,
+                memory:
+                    config.memory &&
+                    ownedModules?.memory?.some(
+                        (m) => m.onChainId === config.memory.onChainId
+                    )
+                        ? config.memory
+                        : null,
+            };
+
+            // Only update cookie if we cleaned something
+            if (JSON.stringify(cleanConfig) !== savedConfig) {
+                Cookies.set(COOKIE_KEY, JSON.stringify(cleanConfig), {
+                    expires: 7,
+                });
+            }
+
+            return cleanConfig;
+        }
+    );
+
+    // Add a validation effect when ownedModules changes
+    useEffect(() => {
+        if (!ownedModules) return;
+
+        setSelectedModules((prev) => {
+            const newConfig = {
+                character:
+                    prev.character &&
+                    ownedModules.character?.some(
+                        (m) => m.onChainId === prev.character.onChainId
+                    )
+                        ? prev.character
+                        : null,
+                knowledge: prev.knowledge.filter((k) =>
+                    ownedModules.knowledge?.some(
+                        (m) => m.onChainId === k.onChainId
+                    )
+                ),
+                speech:
+                    prev.speech &&
+                    ownedModules.speech?.some(
+                        (m) => m.onChainId === prev.speech.onChainId
+                    )
+                        ? prev.speech
+                        : null,
+                tone:
+                    prev.tone &&
+                    ownedModules.tone?.some(
+                        (m) => m.onChainId === prev.tone.onChainId
+                    )
+                        ? prev.tone
+                        : null,
+                memory:
+                    prev.memory &&
+                    ownedModules.memory?.some(
+                        (m) => m.onChainId === prev.memory.onChainId
+                    )
+                        ? prev.memory
+                        : null,
+            };
+
+            // Only update if something changed
+            if (JSON.stringify(newConfig) !== JSON.stringify(prev)) {
+                Cookies.set(COOKIE_KEY, JSON.stringify(newConfig), {
+                    expires: 7,
+                });
+                return newConfig;
+            }
+
+            return prev;
+        });
+    }, [ownedModules]);
+
+    // Helper function to check if a module is still owned
+    const isModuleOwned = (type: ModuleType, moduleId: string) => {
+        if (!ownedModules || !ownedModules[type]) return false;
+        return ownedModules[type].some((m) => m.onChainId === moduleId);
+    };
+
+    // Update handleSelectModule to include ownership check
+    const handleSelectModule = async (type: ModuleType, module: any) => {
+        if (!isModuleOwned(type, module.onChainId)) {
+            console.warn(`Module ${module.onChainId} is no longer owned`);
+            return;
+        }
+
+        try {
+            const moduleContent = await apiClient.getMemoryModule(
+                module.onChainId
+            );
+
+            const moduleWithContent = {
+                ...module,
+                data: moduleContent,
+            };
+
+            setSelectedModules((prev) => {
+                const newConfig = {
+                    ...prev,
+                    [type]:
+                        type === "knowledge"
+                            ? [...prev.knowledge, moduleWithContent]
+                            : moduleWithContent,
+                };
+                Cookies.set(COOKIE_KEY, JSON.stringify(newConfig), {
+                    expires: 7,
+                });
+                return newConfig;
+            });
+        } catch (error) {
+            console.error("Error selecting module:", error);
+        }
+    };
+
+    // Update cookie whenever selections change
+    useEffect(() => {
+        Cookies.set(COOKIE_KEY, JSON.stringify(selectedModules), {
+            expires: 7,
+        });
+    }, [selectedModules]);
 
     const createAgentMutation = useMutation({
         mutationFn: (characterJson: any) =>
             apiClient.post("/agent/start", { characterJson }),
     });
-
-    const handleSelectModule = (type: ModuleType, module: any) => {
-        setSelectedModules((prev) => ({
-            ...prev,
-            [type]: type === "knowledge" ? [...prev.knowledge, module] : module,
-        }));
-    };
 
     const removeModule = (type: ModuleType, onChainId?: string) => {
         setSelectedModules((prev) => ({
@@ -146,6 +321,105 @@ export default function Build() {
         );
     };
 
+    if (isLoading) {
+        return <div>Loading your modules...</div>;
+    }
+
+    const handleCreateMemory = () => {
+        const tx = new Transaction();
+        tx.moveCall({
+            target: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::publish_module`,
+            arguments: [
+                tx.pure.string("Agent Memory"),
+                tx.pure.string("memory"),
+                tx.pure.string(
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s"
+                ),
+                tx.pure.string(
+                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s"
+                ),
+                tx.pure.string("Memory storage for agent interactions"),
+                tx.pure.string("System"),
+            ],
+        });
+
+        signAndExecuteTransaction(
+            {
+                transaction: tx,
+                chain: "sui:devnet",
+            },
+            {
+                onSuccess: async (result) => {
+                    console.log("Transaction result:", result);
+                    console.log("Object changes:", result.objectChanges);
+
+                    // Find the created module object
+                    const createdModule = result.objectChanges?.find(
+                        (change) =>
+                            change.type === "created" &&
+                            change.objectType.endsWith(
+                                "::Core::ComposableModule"
+                            )
+                    );
+
+                    if (!createdModule) {
+                        console.error("Failed to get created module data");
+                        return;
+                    }
+
+                    try {
+                        // Create initial message
+                        const initialMessageKey = `message_${Date.now()}_0_system`;
+                        const initialContent = {
+                            [initialMessageKey]: {
+                                text: "Welcome to your Refract Build a Bot agent!",
+                                user: "system",
+                                createdAt: new Date().toISOString(),
+                                attachments: [],
+                            },
+                        };
+
+                        await apiClient.createModule({
+                            moduleId: createdModule.objectId,
+                            name: "Agent Memory",
+                            type: "memory",
+                            imageUrl:
+                                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
+                            content: JSON.stringify(initialContent),
+                            creatorId: "System",
+                            description:
+                                "Memory storage for agent interactions",
+                        });
+
+                        // Wait for indexing and refetch, then auto-select the new memory
+                        setTimeout(async () => {
+                            await refetchModules();
+                            // Auto-select the newly created memory
+                            const newModule = {
+                                onChainId: createdModule.objectId,
+                                name: "Agent Memory",
+                                type: "memory",
+                                imageUrl:
+                                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
+                                description:
+                                    "Memory storage for agent interactions",
+                            };
+                            handleSelectModule("memory", newModule);
+                        }, 600);
+                    } catch (error) {
+                        console.error(
+                            "Failed to initialize module content:",
+                            error
+                        );
+                    }
+                },
+                onError: (error) => {
+                    console.error("Failed to create memory module:", error);
+                },
+            }
+        );
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[400px,1fr] gap-6 p-6 h-full">
             {/* Assembly Area */}
@@ -158,7 +432,7 @@ export default function Build() {
                     {/* Required Modules */}
                     <div className="border-b border-gray-700 pb-4">
                         <h3 className="text-sm font-medium text-gray-400 mb-2">
-                            Character Module {import.meta.env.BAB_PACKAGE_ID}
+                            Character Module
                         </h3>
                         {renderModule(
                             "character",
@@ -174,7 +448,7 @@ export default function Build() {
                         </h3>
                         <div className="space-y-2">
                             {selectedModules.knowledge.map((module) => (
-                                <div key={module.onChainId}>
+                                <div key={module.instanceId}>
                                     {renderModule("knowledge", module, true)}
                                 </div>
                             ))}
@@ -197,19 +471,20 @@ export default function Build() {
                         </div>
                     </div>
 
-                    {/* Memory Selection */}
-                    <div className="mt-4 border-t border-gray-700 pt-4">
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">
-                            Agent Memory <span className="text-red-500">*</span>
-                        </h3>
-                        <MemoryCarousel
-                            memories={mockModules.memory}
-                            onSelect={(memory) =>
-                                handleSelectModule("memory", memory)
-                            }
-                            selectedMemory={selectedModules.memory}
-                            defaultSelected={mockModules.memory[0]}
-                        />
+                    {/* Memory Module */}
+                    <div className="border-b border-gray-700 pb-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-sm font-medium text-gray-400">
+                                Memory Capsule
+                            </h3>
+                            <button
+                                onClick={handleCreateMemory}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            >
+                                Create New
+                            </button>
+                        </div>
+                        {renderModule("memory", selectedModules.memory, true)}
                     </div>
 
                     {/* Instantiate Button */}
@@ -233,26 +508,152 @@ export default function Build() {
 
             {/* Module Selection */}
             <div className="space-y-6 overflow-auto">
-                {Object.entries(mockModules)
-                    .filter(([type]) => type !== "memory")
-                    .map(([type, modules]) => (
-                        <div key={type}>
-                            <h3 className="text-lg font-semibold mb-4 text-gray-100 capitalize">
-                                {type} Modules
+                {isLoading ? (
+                    <div className="text-center">Loading modules...</div>
+                ) : (
+                    <>
+                        {/* Character, Knowledge, Speech, Tone sections remain the same */}
+                        {/* Character Modules */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4 text-gray-100">
+                                Character Modules
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {modules.map((module) => (
-                                    <div key={module.onChainId}>
-                                        {renderModule(
-                                            type as ModuleType,
-                                            module,
-                                            false
-                                        )}
+                                {(ownedModules?.character || []).length > 0 ? (
+                                    ownedModules.character.map((module) => (
+                                        <div key={module.instanceId}>
+                                            {renderModule(
+                                                "character",
+                                                module,
+                                                false
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full text-gray-500 text-center py-4">
+                                        No character modules found
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </div>
-                    ))}
+
+                        {/* Knowledge Modules */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4 text-gray-100">
+                                Knowledge Modules
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {(ownedModules?.knowledge || []).length > 0 ? (
+                                    ownedModules.knowledge.map((module) => (
+                                        <div key={module.instanceId}>
+                                            {renderModule(
+                                                "knowledge",
+                                                module,
+                                                false
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full text-gray-500 text-center py-4">
+                                        No knowledge modules found
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Speech Modules */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4 text-gray-100">
+                                Speech Modules
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {(ownedModules?.speech || []).length > 0 ? (
+                                    ownedModules.speech.map((module) => (
+                                        <div key={module.instanceId}>
+                                            {renderModule(
+                                                "speech",
+                                                module,
+                                                false
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full text-gray-500 text-center py-4">
+                                        No speech modules found
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Tone Modules */}
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4 text-gray-100">
+                                Tone Modules
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {(ownedModules?.tone || []).length > 0 ? (
+                                    ownedModules.tone.map((module) => (
+                                        <div key={module.instanceId}>
+                                            {renderModule(
+                                                "tone",
+                                                module,
+                                                false
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full text-gray-500 text-center py-4">
+                                        No tone modules found
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Memory Modules */}
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold text-gray-100">
+                                    Memory Modules
+                                </h3>
+                                <button
+                                    onClick={handleCreateMemory}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                    Create New Memory
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {(ownedModules?.memory || []).length > 0 ? (
+                                    ownedModules.memory.map((module) => (
+                                        <ModuleCard
+                                            key={module.onChainId}
+                                            type="memory"
+                                            name={module.name}
+                                            image={module.imageUrl}
+                                            description={module.description}
+                                            onChainId={module.onChainId}
+                                            onSelect={() =>
+                                                handleSelectModule(
+                                                    "memory",
+                                                    module
+                                                )
+                                            }
+                                            isSelected={
+                                                selectedModules.memory
+                                                    ?.onChainId ===
+                                                module.onChainId
+                                            }
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="col-span-full text-gray-500 text-center py-4">
+                                        No memory modules found
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

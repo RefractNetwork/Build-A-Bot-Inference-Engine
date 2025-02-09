@@ -22,7 +22,7 @@ import type { IAttachment } from "@/types";
 import { AudioRecorder } from "./audio-recorder";
 import { Badge } from "./ui/badge";
 import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
 type ExtraContentFields = {
     user: string;
@@ -49,7 +49,6 @@ type Props = {
 };
 
 export default function Page({ agentId, moduleId }: Props) {
-    // { memoryId }: { memoryId: any }
     const { toast } = useToast();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [input, setInput] = useState("");
@@ -180,13 +179,17 @@ export default function Page({ agentId, moduleId }: Props) {
             selectedFile?: File | null;
         }) => {
             // Check if this is the first message using cookies
-            const firstMessageSent = Cookies.get(`agent_${agentId}_first_message_sent`);
+            const firstMessageSent = Cookies.get(
+                `agent_${agentId}_first_message_sent`
+            );
             const isFirstMessage = !firstMessageSent;
 
             if (isFirstMessage) {
                 console.log("isFirstMessage", isFirstMessage);
                 // Set cookie to mark first message as sent
-                Cookies.set(`agent_${agentId}_first_message_sent`, 'true', { expires: 7 });
+                Cookies.set(`agent_${agentId}_first_message_sent`, "true", {
+                    expires: 7,
+                });
 
                 // Get existing message history from memory module
                 const content = await apiClient.getMemoryModule(moduleId);
@@ -195,8 +198,8 @@ export default function Page({ agentId, moduleId }: Props) {
                         text: item.text || "",
                         user: item.user === "system" ? "assistant" : item.user,
                     }))
-                    .filter(msg => msg.text && msg.user)
-                    .map(msg => `${msg.user}: ${msg.text}`)
+                    .filter((msg) => msg.text && msg.user)
+                    .map((msg) => `${msg.user}: ${msg.text}`)
                     .join("\n");
 
                 const messageWithHistory = `<chatlog>\n
@@ -212,7 +215,11 @@ export default function Page({ agentId, moduleId }: Props) {
                 return Array.isArray(response) ? [response[0]] : [response];
             }
 
-            const response = await apiClient.sendMessage(agentId, message, selectedFile);
+            const response = await apiClient.sendMessage(
+                agentId,
+                message,
+                selectedFile
+            );
             return Array.isArray(response) ? [response[0]] : [response];
         },
         onSuccess: async (newMessages: ContentWithUser[]) => {

@@ -130,6 +130,28 @@ export const apiClient = {
         }),
 
     // BAB server
+    createModule: async (moduleData: {
+        moduleId: string;
+        name: string;
+        type: string;
+        imageUrl: string;
+        content: string;
+        creatorId: string;
+        description: string;
+    }) => {
+        const response = await fetch(`${babServerUrl}/api/createModule`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(moduleData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Failed to create module content");
+        }
+        return response.json();
+    },
 
     // Get memory module content
     getMemoryModule: async (moduleId: string) => {
@@ -144,7 +166,10 @@ export const apiClient = {
     },
 
     // Append to memory module
-    appendMemoryModule: async (moduleId: string, newMessages: Record<string, any>) => {
+    appendMemoryModule: async (
+        moduleId: string,
+        newMessages: Record<string, any>
+    ) => {
         const response = await fetch(`${babServerUrl}/api/appendModule`, {
             method: "POST",
             headers: {
