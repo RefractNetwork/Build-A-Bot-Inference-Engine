@@ -108,24 +108,17 @@ export default function Page({ agentId }: { agentId: UUID }) {
               ]
             : undefined;
 
-        const newMessages = [
-            {
-                text: input,
-                user: "user",
-                createdAt: Date.now(),
-                attachments,
-            },
-            {
-                text: input,
-                user: "system",
-                isLoading: true,
-                createdAt: Date.now(),
-            },
-        ];
+        // Only add the user's message initially
+        const newMessage = {
+            text: input,
+            user: "user",
+            createdAt: Date.now(),
+            attachments,
+        };
 
         queryClient.setQueryData(
             ["messages", agentId],
-            (old: ContentWithUser[] = []) => [...old, ...newMessages]
+            (old: ContentWithUser[] = []) => [...old, newMessage]
         );
 
         sendMessageMutation.mutate({
@@ -146,18 +139,54 @@ export default function Page({ agentId }: { agentId: UUID }) {
 
     const sendMessageMutation = useMutation({
         mutationKey: ["send_message", agentId],
-        mutationFn: ({
+        mutationFn: async ({
             message,
             selectedFile,
         }: {
             message: string;
             selectedFile?: File | null;
-        }) => apiClient.sendMessage(agentId, message, selectedFile),
+        }) => {
+            // Get all previous messages
+            const previousMessages =
+                queryClient.getQueryData<ContentWithUser[]>([
+                    "messages",
+                    agentId,
+                ]) || [];
+
+            // Filter out loading messages to get actual conversation history
+            const actualMessages = previousMessages.filter(
+                (msg) => !msg.isLoading
+            );
+
+            // Check if we only have the initial messages by comparing with mockModules length
+            const initialMessagesLength = mockModules.memory[0].data.length;
+            const isFirstNewMessage =
+                actualMessages.length === initialMessagesLength + 1;
+
+            if (isFirstNewMessage) {
+                // Format chat history into the required format
+                const chatHistory = actualMessages
+                    .map((msg) => `${msg.user}: ${msg.text}`)
+                    .join("\n");
+
+                // Wrap the chat history in chatlog tags and combine with the new message
+                const messageWithHistory = `<chatlog>\nHere is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.\n${chatHistory}\n</chatlog>\n${message}`;
+
+                return apiClient.sendMessage(
+                    agentId,
+                    messageWithHistory,
+                    selectedFile
+                );
+            }
+
+            // For subsequent messages, send as normal
+            return apiClient.sendMessage(agentId, message, selectedFile);
+        },
         onSuccess: (newMessages: ContentWithUser[]) => {
             queryClient.setQueryData(
                 ["messages", agentId],
                 (old: ContentWithUser[] = []) => [
-                    ...old.filter((msg) => !msg.isLoading),
+                    ...old,
                     ...newMessages.map((msg) => ({
                         ...msg,
                         createdAt: Date.now(),

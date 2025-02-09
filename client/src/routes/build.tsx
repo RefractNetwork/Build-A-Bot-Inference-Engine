@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { ModuleCard } from "@/components/module-card";
 import { mockModules } from "@/lib/mock-modules";
@@ -93,42 +92,26 @@ export default function Build() {
             }
 
             // Add memory module
-            if (selectedModules.memory) {
-                // Memory data is an array of strings in format "user: ... response: ..."
-                const memoryKnowledge = selectedModules.memory.data.map(
-                    (memoryItem) => memoryItem // The memory items are already formatted
-                );
-
-                // Add memories to knowledge array
-                finalCharacter.knowledge = [
-                    ...(finalCharacter.knowledge || []),
-                    ...memoryKnowledge,
-                ];
-
-                console.log("Final Knowledge Array:", finalCharacter.knowledge); // Debug log
-            }
+            // if (selectedModules.memory) {
+            //     // Memory data is an array of strings in format "user: ... response: ..."
+            //     const memoryKnowledge = selectedModules.memory.data.map(
+            //         (memoryItem) => memoryItem // The memory items are already formatted
+            //     );
+            //
+            //     // Add memories to knowledge array
+            //     finalCharacter.knowledge = [
+            //         ...(finalCharacter.knowledge || []),
+            //         ...memoryKnowledge,
+            //     ];
+            //
+            //     console.log("Final Knowledge Array:", finalCharacter.knowledge); // Debug log
+            // }
 
             // Add speech and tone if selected
             if (selectedModules.speech && selectedModules.tone) {
                 finalCharacter.speech = selectedModules.speech.data || {};
                 finalCharacter.tone = selectedModules.tone.data || {};
             }
-
-            // Example initial chat history
-            // const initialMemories = [
-            //     {
-            //         text: `<chatlog>${selectedModules.memory.data.join(
-            //             "\n"
-            //         )}<chatlog/> Hello! How are you?`,
-            //         user: "user",
-            //         createdAt: Date.now() - 1000 * 60 * 5, // 5 minutes ago
-            //     },
-            //     {
-            //         text: "I'm doing great! How can I help you today?",
-            //         user: "assistant",
-            //         createdAt: Date.now() - 1000 * 60 * 4, // 4 minutes ago
-            //     },
-            // ];
 
             // Create the agent with initial memories
             const response = await apiClient.startAgent(finalCharacter);
