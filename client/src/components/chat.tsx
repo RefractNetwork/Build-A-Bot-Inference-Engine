@@ -171,7 +171,9 @@ export default function Page({ agentId }: { agentId: UUID }) {
                     .join("\n");
 
                 // Wrap the chat history in chatlog tags and combine with the new message
-                const messageWithHistory = `<chatlog>\nHere is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.\n${chatHistory}\n</chatlog>\n${message}`;
+                const messageWithHistory = `<chatlog>\n
+                                            Here is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.
+                                            \n${chatHistory}\n</chatlog>\n${message}`;
 
                 const response = await apiClient.sendMessage(
                     agentId,
@@ -183,7 +185,11 @@ export default function Page({ agentId }: { agentId: UUID }) {
             }
 
             // For subsequent messages, send as normal
-            const response = await apiClient.sendMessage(agentId, message, selectedFile);
+            const response = await apiClient.sendMessage(
+                agentId,
+                message,
+                selectedFile
+            );
             // Ensure we only return a single message
             return Array.isArray(response) ? [response[0]] : [response];
         },
