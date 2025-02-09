@@ -5,7 +5,6 @@ import { apiClient } from "@/lib/api";
 import { NavLink } from "react-router";
 import type { UUID } from "@elizaos/core";
 import { formatAgentName } from "@/lib/utils";
-import { CreateAgentDialog } from "@/components/ui/create-agent-dialog";
 
 export default function Home() {
     const queryClient = useQueryClient();
@@ -34,7 +33,6 @@ export default function Home() {
         <div className="flex flex-col gap-4 h-full p-4 bg-gray-950">
             <PageTitle title="Agents" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <CreateAgentDialog />
                 {agents?.map((agent: { id: UUID; name: string }) => (
                     <div
                         key={agent.id}

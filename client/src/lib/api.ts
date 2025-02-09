@@ -118,22 +118,12 @@ export const apiClient = {
             body: formData,
         });
     },
-    startAgent: (characterJson: object, initialMemories?: Array<{
-        text: string,
-        user: string,
-        createdAt: number,
-        attachments?: Array<{
-            url: string,
-            contentType: string,
-            title: string
-        }>
-    }>) =>
+    startAgent: (characterJson: object) =>
         fetcher({
             url: "/agent/start",
             method: "POST",
             body: {
                 characterJson,
-                initialMemories
             },
         }),
 };
