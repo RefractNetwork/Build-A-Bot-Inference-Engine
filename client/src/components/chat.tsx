@@ -9,7 +9,7 @@ import { useTransition, animated, type AnimatedProps } from "@react-spring/web";
 import { Paperclip, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Content, UUID } from "@elizaos/core";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage } from "./ui/avatar";
@@ -37,10 +37,9 @@ type AnimatedDivProps = AnimatedProps<{ style: React.CSSProperties }> & {
 };
 
 function cleanMessage(text: string): string {
-    // Remove <chatlog> tags and their contents, handling both closing tag formats
     return text
-        .replace(/<chatlog>.*?<\/chatlog>/gs, "") // Handle </chatlog>
-        .replace(/<chatlog>.*?<chatlog\/>/gs, "") // Handle <chatlog/>
+        .replace(/<chatlog>.*?<\/chatlog>/gs, "")
+        .replace(/<chatlog>.*?<chatlog\/>/gs, "")
         .trim();
 }
 
@@ -63,11 +62,10 @@ export default function Page({ agentId }: { agentId: UUID }) {
         });
 
     useEffect(() => {
-        // Get the memory data from mockModules and convert to ContentWithUser format
         const initialMessages: ContentWithUser[] =
             mockModules.memory[0].data.map((memoryItem) => ({
                 text: memoryItem.text,
-                user: memoryItem.user === "system" ? "system" : "user", // Map memory user to correct type
+                user: memoryItem.user === "system" ? "system" : "user",
                 createdAt: memoryItem.createdAt,
             }));
 
@@ -108,7 +106,6 @@ export default function Page({ agentId }: { agentId: UUID }) {
               ]
             : undefined;
 
-        // Only add the user's message initially
         const newMessage = {
             text: input,
             user: "user",
@@ -146,51 +143,42 @@ export default function Page({ agentId }: { agentId: UUID }) {
             message: string;
             selectedFile?: File | null;
         }) => {
-            // Get all previous messages
             const previousMessages =
                 queryClient.getQueryData<ContentWithUser[]>([
                     "messages",
                     agentId,
                 ]) || [];
 
-            // Filter out loading messages to get actual conversation history
             const actualMessages = previousMessages.filter(
                 (msg) => !msg.isLoading
             );
 
-            // Check if we only have the initial messages by comparing with mockModules length
             const initialMessagesLength = mockModules.memory[0].data.length;
             const isFirstNewMessage =
                 actualMessages.length === initialMessagesLength + 1;
-            console.log("isFirstNewMessage", isFirstNewMessage);
 
             if (isFirstNewMessage) {
-                // Format chat history into the required format
                 const chatHistory = actualMessages
                     .map((msg) => `${msg.user}: ${msg.text}`)
                     .join("\n");
 
-                // Wrap the chat history in chatlog tags and combine with the new message
                 const messageWithHistory = `<chatlog>\n
-                                            Here is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.
-                                            \n${chatHistory}\n</chatlog>\n${message}`;
+                    Here is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.
+                    \n${chatHistory}\n</chatlog>\n${message}`;
 
                 const response = await apiClient.sendMessage(
                     agentId,
                     messageWithHistory,
                     selectedFile
                 );
-                // Ensure we only return a single message
                 return Array.isArray(response) ? [response[0]] : [response];
             }
 
-            // For subsequent messages, send as normal
             const response = await apiClient.sendMessage(
                 agentId,
                 message,
                 selectedFile
             );
-            // Ensure we only return a single message
             return Array.isArray(response) ? [response[0]] : [response];
         },
         onSuccess: (newMessages: ContentWithUser[]) => {
@@ -204,6 +192,14 @@ export default function Page({ agentId }: { agentId: UUID }) {
                     })),
                 ]
             );
+
+            // Update mock modules memory
+            const messagesToAppend = newMessages.map((msg) => ({
+                text: msg.text,
+                user: msg.user,
+                createdAt: Date.now(),
+            }));
+            mockModules.memory[0].data.push(...messagesToAppend);
         },
         onError: (e) => {
             toast({
@@ -278,7 +274,6 @@ export default function Page({ agentId }: { agentId: UUID }) {
                                             ) : (
                                                 cleanMessage(message?.text)
                                             )}
-                                            {/* Attachments */}
                                             <div>
                                                 {message?.attachments?.map(
                                                     (

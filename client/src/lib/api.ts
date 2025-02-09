@@ -63,6 +63,8 @@ const fetcher = async ({
     });
 };
 
+const babServerUrl = "http://localhost:5001";
+
 export const apiClient = {
     delete: (url: string) =>
         fetcher({
@@ -126,4 +128,37 @@ export const apiClient = {
                 characterJson,
             },
         }),
+
+    // BAB server
+
+    // Get memory module content
+
+    getMemoryModule: async (moduleId: string) => {
+        const response = await fetch(
+            `${babServerUrl}/api/getModule/${moduleId}`
+        );
+        if (!response.ok) {
+            throw new Error("Failed to fetch memory module");
+        }
+        const data = await response.json();
+        return data.data.content;
+    },
+
+    // Append to memory module
+    appendMemoryModule: async (moduleId: string, newMessages: any[]) => {
+        const response = await fetch(`${babServerUrl}/api/appendModule`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                moduleId,
+                content: JSON.stringify(newMessages),
+            }),
+        });
+        if (!response.ok) {
+            throw new Error("Failed to append to memory module");
+        }
+        return response.json();
+    },
 };
