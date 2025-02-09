@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { Toast } from "@/components/ui/toast";
 import { useNavigate } from "react-router";
+import Cookies from 'js-cookie';
 
 type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
 
@@ -16,6 +17,8 @@ interface SelectedModules {
     tone: any | null;
     memory: any | null;
 }
+
+const MEMORY_MODULE_ID = "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
 
 export default function Build() {
     const navigate = useNavigate();
@@ -117,11 +120,15 @@ export default function Build() {
             const response = await apiClient.startAgent(finalCharacter);
 
             if (response.id) {
-                navigate(`/chat/${response.id}`);
+                // Store creation timestamp in cookie
+                Cookies.set(`agent_${response.id}_created`, Date.now().toString(), { expires: 7 });
+                
+                // Navigate to chat with both agent ID and memory module ID
+                navigate(`/chat/${response.id}?moduleId=${MEMORY_MODULE_ID}`);
             }
         } catch (error) {
             setToast({
-                message: "Error creating agent: " + error.message,
+                message: "Error creating agent: " + (error as Error).message,
                 type: "error",
             });
         }

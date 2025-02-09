@@ -22,6 +22,7 @@ import type { IAttachment } from "@/types";
 import { AudioRecorder } from "./audio-recorder";
 import { Badge } from "./ui/badge";
 import { useAutoScroll } from "./ui/chat/hooks/useAutoScroll";
+import Cookies from 'js-cookie';
 
 type ExtraContentFields = {
     user: string;
@@ -42,7 +43,12 @@ function cleanMessage(text: string): string {
         .trim();
 }
 
-export default function Page({ agentId }: { agentId: UUID }) {
+type Props = {
+    agentId: UUID;
+    moduleId: string;
+};
+
+export default function Page({ agentId, moduleId }: Props) {
     // { memoryId }: { memoryId: any }
     const { toast } = useToast();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -64,24 +70,25 @@ export default function Page({ agentId }: { agentId: UUID }) {
     useEffect(() => {
         const loadMemoryModule = async () => {
             try {
-                const moduleId = "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
                 const content = await apiClient.getMemoryModule(moduleId);
 
                 // Convert the content object to an array and sort by createdAt
-                const initialMessages: ContentWithUser[] = Object.entries(content)
+                const initialMessages: ContentWithUser[] = Object.entries(
+                    content
+                )
                     .map(([_, item]: [string, any]) => ({
                         text: item.text || "",
                         user: item.user === "system" ? "assistant" : item.user, // Normalize system to assistant
                         createdAt: item.createdAt || Date.now(),
                         attachments: item.attachments || undefined,
                     }))
-                    .filter(msg => msg.text && msg.user) // Filter out invalid messages
+                    .filter((msg) => msg.text && msg.user) // Filter out invalid messages
                     .sort((a, b) => a.createdAt - b.createdAt);
 
                 if (initialMessages.length > 0) {
                     queryClient.setQueryData(
                         ["messages", agentId],
-                        (old: ContentWithUser[] = []) => 
+                        (old: ContentWithUser[] = []) =>
                             old.length === 0 ? initialMessages : old
                     );
                 }
@@ -124,19 +131,21 @@ export default function Page({ agentId }: { agentId: UUID }) {
         };
 
         // Store user message immediately
-        const moduleId = "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
         const userMessageToStore = {
             [`message_${Date.now()}_user`]: {
                 text: input,
                 user: "user",
                 createdAt: Date.now(),
                 attachments,
-            }
+            },
         };
-        
+
         // Store user message in memory module
-        apiClient.appendMemoryModule(moduleId, userMessageToStore)
-            .catch(error => console.error('Failed to store user message:', error));
+        apiClient
+            .appendMemoryModule(moduleId, userMessageToStore)
+            .catch((error) =>
+                console.error("Failed to store user message:", error)
+            );
 
         // Update UI with user message
         queryClient.setQueryData(
@@ -170,32 +179,31 @@ export default function Page({ agentId }: { agentId: UUID }) {
             message: string;
             selectedFile?: File | null;
         }) => {
-            const previousMessages =
-                queryClient.getQueryData<ContentWithUser[]>([
-                    "messages",
-                    agentId,
-                ]) || [];
+            // Check if this is the first message using cookies
+            const firstMessageSent = Cookies.get(`agent_${agentId}_first_message_sent`);
+            const isFirstMessage = !firstMessageSent;
 
-            const actualMessages = previousMessages.filter(
-                (msg) => !msg.isLoading
-            );
+            if (isFirstMessage) {
+                console.log("isFirstMessage", isFirstMessage);
+                // Set cookie to mark first message as sent
+                Cookies.set(`agent_${agentId}_first_message_sent`, 'true', { expires: 7 });
 
-            const moduleId =
-                "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
-            const content = await apiClient.getMemoryModule(moduleId);
-            const initialMessagesLength = Object.keys(content).length;
-            const isFirstNewMessage =
-                actualMessages.length === initialMessagesLength + 1;
-
-            if (isFirstNewMessage) {
-                const chatHistory = actualMessages
-                    .map((msg) => `${msg.user}: ${msg.text}`)
+                // Get existing message history from memory module
+                const content = await apiClient.getMemoryModule(moduleId);
+                const existingMessages = Object.entries(content)
+                    .map(([_, item]: [string, any]) => ({
+                        text: item.text || "",
+                        user: item.user === "system" ? "assistant" : item.user,
+                    }))
+                    .filter(msg => msg.text && msg.user)
+                    .map(msg => `${msg.user}: ${msg.text}`)
                     .join("\n");
 
                 const messageWithHistory = `<chatlog>\n
                     Here is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.
-                    \n${chatHistory}\n</chatlog>\n${message}`;
+                    \n${existingMessages}\n</chatlog>\n${message}`;
 
+                console.log("chatlog: ", messageWithHistory);
                 const response = await apiClient.sendMessage(
                     agentId,
                     messageWithHistory,
@@ -204,16 +212,12 @@ export default function Page({ agentId }: { agentId: UUID }) {
                 return Array.isArray(response) ? [response[0]] : [response];
             }
 
-            const response = await apiClient.sendMessage(
-                agentId,
-                message,
-                selectedFile
-            );
+            const response = await apiClient.sendMessage(agentId, message, selectedFile);
             return Array.isArray(response) ? [response[0]] : [response];
         },
         onSuccess: async (newMessages: ContentWithUser[]) => {
             // Format new messages consistently
-            const formattedMessages = newMessages.map(msg => ({
+            const formattedMessages = newMessages.map((msg) => ({
                 ...msg,
                 user: msg.user === "system" ? "assistant" : msg.user,
                 createdAt: Date.now(),
@@ -226,20 +230,24 @@ export default function Page({ agentId }: { agentId: UUID }) {
             );
 
             // Prepare assistant messages for memory storage
-            const moduleId = "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
-            const messagesToAppend = formattedMessages.reduce((acc, msg, index) => {
-                // Create a unique key for each message
-                const key = `message_${Date.now()}_${index}_assistant`;
-                return {
-                    ...acc,
-                    [key]: {
-                        text: msg.text,
-                        user: msg.user,
-                        createdAt: msg.createdAt,
-                        attachments: msg.attachments,
-                    }
-                };
-            }, {});
+            const moduleId =
+                "0x8d4e3c2f1a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3";
+            const messagesToAppend = formattedMessages.reduce(
+                (acc, msg, index) => {
+                    // Create a unique key for each message
+                    const key = `message_${Date.now()}_${index}_assistant`;
+                    return {
+                        ...acc,
+                        [key]: {
+                            text: msg.text,
+                            user: msg.user,
+                            createdAt: msg.createdAt,
+                            attachments: msg.attachments,
+                        },
+                    };
+                },
+                {}
+            );
 
             await apiClient.appendMemoryModule(moduleId, messagesToAppend);
         },
@@ -260,16 +268,19 @@ export default function Page({ agentId }: { agentId: UUID }) {
     };
 
     // Simplified query with memoized options
-    const queryOptions = useMemo(() => ({
-        queryKey: ["messages", agentId] as const,
-        initialData: [] as ContentWithUser[],
-        staleTime: Infinity, // Prevent unnecessary refetches
-        onSuccess: (data: ContentWithUser[]) => {
-            if (data.length > 0) {
-                requestAnimationFrame(scrollToBottom);
-            }
-        },
-    }), [agentId, scrollToBottom]);
+    const queryOptions = useMemo(
+        () => ({
+            queryKey: ["messages", agentId] as const,
+            initialData: [] as ContentWithUser[],
+            staleTime: Infinity, // Prevent unnecessary refetches
+            onSuccess: (data: ContentWithUser[]) => {
+                if (data.length > 0) {
+                    requestAnimationFrame(scrollToBottom);
+                }
+            },
+        }),
+        [agentId, scrollToBottom]
+    );
 
     const { data: messages = [] } = useQuery(queryOptions);
 
