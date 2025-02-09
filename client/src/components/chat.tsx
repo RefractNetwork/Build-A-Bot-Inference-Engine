@@ -162,6 +162,7 @@ export default function Page({ agentId }: { agentId: UUID }) {
             const initialMessagesLength = mockModules.memory[0].data.length;
             const isFirstNewMessage =
                 actualMessages.length === initialMessagesLength + 1;
+            console.log("isFirstNewMessage", isFirstNewMessage);
 
             if (isFirstNewMessage) {
                 // Format chat history into the required format
@@ -172,15 +173,19 @@ export default function Page({ agentId }: { agentId: UUID }) {
                 // Wrap the chat history in chatlog tags and combine with the new message
                 const messageWithHistory = `<chatlog>\nHere is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.\n${chatHistory}\n</chatlog>\n${message}`;
 
-                return apiClient.sendMessage(
+                const response = await apiClient.sendMessage(
                     agentId,
                     messageWithHistory,
                     selectedFile
                 );
+                // Ensure we only return a single message
+                return Array.isArray(response) ? [response[0]] : [response];
             }
 
             // For subsequent messages, send as normal
-            return apiClient.sendMessage(agentId, message, selectedFile);
+            const response = await apiClient.sendMessage(agentId, message, selectedFile);
+            // Ensure we only return a single message
+            return Array.isArray(response) ? [response[0]] : [response];
         },
         onSuccess: (newMessages: ContentWithUser[]) => {
             queryClient.setQueryData(
