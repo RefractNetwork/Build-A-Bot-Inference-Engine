@@ -70,52 +70,36 @@ export function MarketplaceModuleCard({
     const handlePurchase = async () => {
         if (!account?.address) return;
 
+        const tx = new Transaction();
+
         // Get a SUI coin with sufficient balance
         const coins = await client.getCoins({
             owner: account.address,
             coinType: "0x2::sui::SUI",
         });
 
-        // Aggregate coins if needed
-        let totalBalance = BigInt(0);
-        const coinsToUse = [];
+        const gasObjects = [];
         for (const coin of coins.data) {
-            coinsToUse.push(coin);
-            totalBalance += BigInt(coin.balance);
-            if (totalBalance >= BigInt(module.price)) break;
+            gasObjects.push({
+                objectId: coin.coinObjectId,
+                version: coin.version,
+                digest: coin.digest,
+            });
         }
+        tx.setGasPayment(gasObjects); // Smash all gas tokens together and set it as gas
+        tx.setSender(account.address);
+        tx.setGasBudget(100_000_000);
 
-        if (totalBalance < BigInt(module.price)) {
-            alert("Insufficient balance");
-            return;
-        }
+        const modulePrice = BigInt(module.price);
+        console.log("Module price:", modulePrice);
+        const [paymentCoin] = tx.splitCoins(tx.gas, [modulePrice]);
 
-        const tx = new Transaction();
-        tx.setGasBudget(2_000_000_000);
-        let paymentCoin;
-        if (coinsToUse.length > 1) {
-            const [primaryCoin, ...otherCoins] = coinsToUse;
-            paymentCoin = tx.object(primaryCoin.coinObjectId);
-            for (const coin of otherCoins) {
-                tx.mergeCoins(paymentCoin, tx.object(coin.coinObjectId));
-            }
-        } else {
-            paymentCoin = tx.object(coinsToUse[0].coinObjectId);
-        }
-
-        if (totalBalance > BigInt(module.price)) {
-            const [splitCoin] = tx.splitCoins(paymentCoin, [
-                tx.pure.u64(module.price),
-            ]);
-            paymentCoin = splitCoin;
-        }
-
-        const purchaseResult = tx.moveCall({
+        tx.moveCall({
             target: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::purchase_module`,
             arguments: [tx.object(module.id), paymentCoin],
         });
 
-        tx.transferObjects([purchaseResult], tx.pure(account.address));
+        tx.transferObjects([paymentCoin], account.address);
 
         signAndExecuteTransaction(
             {
