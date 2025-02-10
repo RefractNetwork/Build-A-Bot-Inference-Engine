@@ -178,41 +178,25 @@ export default function Page({ agentId, moduleId }: Props) {
             message: string;
             selectedFile?: File | null;
         }) => {
-            // Check if this is the first message using cookies
-            const firstMessageSent = Cookies.get(
-                `agent_${agentId}_first_message_sent`
-            );
-            const isFirstMessage = !firstMessageSent;
+            // Check if this is a new agent instantiation
+            const agentStarted = Cookies.get("agent_started");
 
-            if (isFirstMessage) {
-                console.log("isFirstMessage", isFirstMessage);
-                // Set cookie to mark first message as sent
-                Cookies.set(`agent_${agentId}_first_message_sent`, "true", {
-                    expires: 7,
-                });
+            if (agentStarted === "false") {
+                // Initialize chat with welcome message
+                const initialMessageKey = `message_${Date.now()}_0_system`;
+                const initialMessage = {
+                    [initialMessageKey]: {
+                        text: "Welcome to your Refract Build a Bot agent!",
+                        user: "system",
+                        createdAt: new Date().toISOString(),
+                        attachments: [],
+                    },
+                };
 
-                // Get existing message history from memory module
-                const content = await apiClient.getMemoryModule(moduleId);
-                const existingMessages = Object.entries(content)
-                    .map(([_, item]: [string, any]) => ({
-                        text: item.text || "",
-                        user: item.user === "system" ? "assistant" : item.user,
-                    }))
-                    .filter((msg) => msg.text && msg.user)
-                    .map((msg) => `${msg.user}: ${msg.text}`)
-                    .join("\n");
+                await apiClient.appendMemoryModule(moduleId, initialMessage);
 
-                const messageWithHistory = `<chatlog>\n
-                    Here is the previous chatlog for reference, act as if you are continuing the conversation and don't mention the chatlog.
-                    \n${existingMessages}\n</chatlog>\n${message}`;
-
-                console.log("chatlog: ", messageWithHistory);
-                const response = await apiClient.sendMessage(
-                    agentId,
-                    messageWithHistory,
-                    selectedFile
-                );
-                return Array.isArray(response) ? [response[0]] : [response];
+                // Mark agent as started
+                Cookies.set("agent_started", "true", { expires: 7 });
             }
 
             const response = await apiClient.sendMessage(

@@ -32,7 +32,6 @@ export function ModuleCard({
 }: ModuleCardProps) {
     const [showDetails, setShowDetails] = useState(false);
     const truncatedId = `${onChainId.slice(0, 6)}...${onChainId.slice(-4)}`;
-    console.log("ModuleCard", { type, name, image, description, onChainId });
 
     return (
         <>

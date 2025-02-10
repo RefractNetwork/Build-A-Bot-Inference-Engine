@@ -258,21 +258,12 @@ export default function Build() {
                 finalCharacter.tone = selectedModules.tone.data || {};
             }
 
-            // Create the agent with initial memories
+            // Create the agent
             const response = await apiClient.startAgent(finalCharacter);
 
             if (response.id) {
-                // Store creation timestamp and memory module ID
-                Cookies.set(
-                    `agent_${response.id}_created`,
-                    Date.now().toString(),
-                    { expires: 7 }
-                );
-                Cookies.set(
-                    `agent_${response.id}_memory`,
-                    selectedModules.memory.onChainId,
-                    { expires: 7 }
-                );
+                // Set agent_started to false to indicate a new instantiation
+                Cookies.set("agent_started", "false", { expires: 7 });
 
                 navigate(
                     `/chat/${response.id}?moduleId=${selectedModules.memory.onChainId}`

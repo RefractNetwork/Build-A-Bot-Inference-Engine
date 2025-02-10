@@ -92,7 +92,6 @@ export function MarketplaceModuleCard({
         tx.setGasBudget(100_000_000);
 
         const modulePrice = BigInt(module.price);
-        console.log("Module price:", modulePrice);
         const [paymentCoin] = tx.splitCoins(tx.gas, [modulePrice]);
 
         tx.moveCall({
