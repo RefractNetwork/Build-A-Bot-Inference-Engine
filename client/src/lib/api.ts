@@ -1,6 +1,8 @@
 import type { UUID, Character } from "@elizaos/core";
 
-const BASE_URL = `http://localhost:${import.meta.env.VITE_SERVER_PORT}`;
+// const BASE_URL = `http://localhost:${import.meta.env.VITE_SERVER_PORT}`;
+
+const BASE_URL = import.meta.env.VITE_ELIZA_BE;
 
 const fetcher = async ({
     url,
@@ -63,7 +65,7 @@ const fetcher = async ({
     });
 };
 
-const babServerUrl = "http://localhost:5001";
+const babServerUrl = import.meta.env.VITE_BE;
 
 export const apiClient = {
     delete: (url: string) =>
@@ -96,9 +98,11 @@ export const apiClient = {
         });
     },
     getAgents: () => fetcher({ url: "/agents" }),
-    getAgent: (agentId: string): Promise<{ 
-        id: UUID; 
-        character: Character & { 
+    getAgent: (
+        agentId: string
+    ): Promise<{
+        id: UUID;
+        character: Character & {
             imageUrl?: string;
             settings?: {
                 voice?: any;
@@ -106,7 +110,7 @@ export const apiClient = {
                     url?: string;
                 };
             };
-        }; 
+        };
     }> => fetcher({ url: `/agents/${agentId}` }),
 
     tts: (agentId: string, text: string, voiceSettings: any) => {

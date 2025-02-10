@@ -28,6 +28,8 @@ export default defineConfig(({ mode }) => {
             "import.meta.env.VITE_BAB_NETWORK": JSON.stringify(
                 env.BAB_NETWORK || ""
             ),
+            "import.meta.env.VITE_ELIZA_BE": JSON.stringify(env.ELIZA_BE || ""),
+            "import.meta.env.VITE_BE": JSON.stringify(env.BE || ""),
         },
         build: {
             outDir: "dist",
@@ -40,6 +42,9 @@ export default defineConfig(({ mode }) => {
             alias: {
                 "@": "/src",
             },
+        },
+        server: {
+            allowedHosts: ["eliza.charlesji.com"],
         },
     };
 });
