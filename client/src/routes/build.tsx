@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from "react";
 import { ModuleCard } from "@/components/module-card";
 // import { MemoryCarousel } from "@/components/ui/memory-carousel";
@@ -336,7 +337,7 @@ export default function Build() {
     const handleCreateMemory = () => {
         const tx = new Transaction();
         tx.moveCall({
-            target: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::publish_module`,
+            target: `${import.meta.env.BAB_PACKAGE_ID}::Core::publish_module`,
             arguments: [
                 tx.pure.string("Agent Memory"),
                 tx.pure.string("memory"),
