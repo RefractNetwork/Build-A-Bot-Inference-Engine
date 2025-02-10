@@ -23,8 +23,17 @@ export function UploadModuleDialog({
     const [isUploading, setIsUploading] = useState(false);
     const client = useSuiClient();
     const account = useCurrentAccount();
-    const { mutate: signAndExecuteTransaction } =
-        useSignAndExecuteTransaction();
+    const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction({
+        execute: async ({ bytes, signature }) =>
+            await client.executeTransactionBlock({
+                transactionBlock: bytes,
+                signature,
+                options: {
+                    showRawEffects: true,
+                    showObjectChanges: true,
+                },
+            }),
+    });
 
     const [uploadData, setUploadData] = useState<ModuleUploadData>({
         name: "",
@@ -40,10 +49,35 @@ export function UploadModuleDialog({
         try {
             setIsUploading(true);
 
-            // Validate JSON content
-            JSON.parse(uploadData.content);
+            // Validate JSON structure
+            let parsedContent;
+            try {
+                parsedContent = JSON.parse(uploadData.content);
+
+                // Validate required fields in the JSON structure
+                const requiredFields = ["name"];
+                const missingFields = requiredFields.filter(
+                    (field) => !parsedContent[field]
+                );
+
+                if (missingFields.length > 0) {
+                    throw new Error(
+                        `Missing required fields in JSON: ${missingFields.join(
+                            ", "
+                        )}`
+                    );
+                }
+            } catch (e) {
+                if (e instanceof SyntaxError) {
+                    throw new Error(
+                        "Invalid JSON format. Please check your JSON syntax."
+                    );
+                }
+                throw e;
+            }
 
             const tx = new Transaction();
+            tx.setGasBudget(20_000_000);
             tx.moveCall({
                 target: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::publish_module`,
                 arguments: [
@@ -63,14 +97,15 @@ export function UploadModuleDialog({
                 },
                 {
                     onSuccess: async (result) => {
-                        // Find the created module object
                         const createdModule = result.objectChanges?.find(
                             (change) =>
                                 change.type === "created" &&
-                                change.objectType.includes(
+                                change.objectType.endsWith(
                                     "::Core::ComposableModule"
                                 )
                         );
+
+                        console.log("Created module:", createdModule);
 
                         if (!createdModule) {
                             throw new Error(
@@ -78,7 +113,6 @@ export function UploadModuleDialog({
                             );
                         }
 
-                        // Create module content on BAB server
                         await apiClient.createModule({
                             moduleId: createdModule.objectId,
                             name: uploadData.name,
@@ -100,14 +134,62 @@ export function UploadModuleDialog({
             );
         } catch (error) {
             console.error("Error uploading module:", error);
-            if (error instanceof SyntaxError) {
-                alert("Invalid JSON content");
-            } else {
-                alert("Failed to upload module: " + (error as Error).message);
-            }
+            alert((error as Error).message);
         } finally {
             setIsUploading(false);
         }
+    };
+
+    const JsonTextarea = ({
+        value,
+        onChange,
+    }: {
+        value: string;
+        onChange: (value: string) => void;
+    }) => {
+        const [error, setError] = useState<string | null>(null);
+
+        const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+            const newValue = e.target.value;
+            onChange(newValue);
+
+            // Live validation
+            try {
+                if (newValue.trim()) {
+                    JSON.parse(newValue);
+                    setError(null);
+                }
+            } catch (e) {
+                setError("Invalid JSON format");
+            }
+        };
+
+        return (
+            <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Content (JSON)
+                </label>
+                <textarea
+                    value={value}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 border ${
+                        error ? "border-red-500" : "border-gray-700"
+                    } text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono`}
+                    rows={10}
+                    placeholder={`Paste your JSON here, example format:
+{
+  "name": "Module Name",
+  "type": "character",
+  "bio": ["Bio line 1", "Bio line 2"],
+  "lore": ["Lore line 1", "Lore line 2"],
+  "knowledge": ["Knowledge 1", "Knowledge 2"],
+  "topics": ["topic1", "topic2"],
+  ...
+}`}
+                />
+                {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+            </div>
+        );
     };
 
     return (
@@ -193,22 +275,15 @@ export function UploadModuleDialog({
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                            Content (JSON)
-                        </label>
-                        <textarea
-                            value={uploadData.content}
-                            onChange={(e) =>
-                                setUploadData((prev) => ({
-                                    ...prev,
-                                    content: e.target.value,
-                                }))
-                            }
-                            className="w-full px-3 py-2 rounded-md bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                            rows={10}
-                        />
-                    </div>
+                    <JsonTextarea
+                        value={uploadData.content}
+                        onChange={(value) =>
+                            setUploadData((prev) => ({
+                                ...prev,
+                                content: value,
+                            }))
+                        }
+                    />
 
                     <DialogFooter>
                         <button

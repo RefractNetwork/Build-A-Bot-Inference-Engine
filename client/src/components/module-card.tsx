@@ -32,6 +32,7 @@ export function ModuleCard({
 }: ModuleCardProps) {
     const [showDetails, setShowDetails] = useState(false);
     const truncatedId = `${onChainId.slice(0, 6)}...${onChainId.slice(-4)}`;
+    console.log("ModuleCard", { type, name, image, description, onChainId });
 
     return (
         <>
@@ -60,11 +61,19 @@ export function ModuleCard({
             <Dialog open={showDetails} onClose={() => setShowDetails(false)}>
                 <DialogContent className="max-h-[80vh]">
                     <DialogHeader>
-                        <DialogTitle
-                            image={image}
-                            title={name}
-                            subtitle={type}
-                        />
+                        <div className="flex items-center gap-4">
+                            <img
+                                src={image}
+                                alt={name}
+                                className="w-16 h-16 rounded-lg object-cover"
+                            />
+                            <div>
+                                <DialogTitle>{name}</DialogTitle>
+                                <p className="text-sm text-gray-400 capitalize">
+                                    {type}
+                                </p>
+                            </div>
+                        </div>
                     </DialogHeader>
 
                     <div className="space-y-4">

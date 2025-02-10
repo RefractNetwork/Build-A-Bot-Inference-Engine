@@ -42,6 +42,8 @@ export default function Build() {
         refetch: refetchModules,
     } = useOwnedModules();
 
+    console.log("Owned modules:", ownedModules);
+
     // Initialize state from cookie if available
     const [selectedModules, setSelectedModules] = useState<SelectedModules>(
         () => {
@@ -298,7 +300,11 @@ export default function Build() {
                 {module ? (
                     <>
                         <ModuleCard
-                            {...module}
+                            type={type}
+                            name={module.name}
+                            image={module.imageUrl} // Map imageUrl to image
+                            description={module.description}
+                            onChainId={module.onChainId}
                             isSelected={isSelected}
                             isCompact={true}
                             onSelect={() => handleSelectModule(type, module)}
