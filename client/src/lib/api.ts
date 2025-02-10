@@ -96,8 +96,18 @@ export const apiClient = {
         });
     },
     getAgents: () => fetcher({ url: "/agents" }),
-    getAgent: (agentId: string): Promise<{ id: UUID; character: Character }> =>
-        fetcher({ url: `/agents/${agentId}` }),
+    getAgent: (agentId: string): Promise<{ 
+        id: UUID; 
+        character: Character & { 
+            imageUrl?: string;
+            settings?: {
+                voice?: any;
+                image?: {
+                    url?: string;
+                };
+            };
+        }; 
+    }> => fetcher({ url: `/agents/${agentId}` }),
 
     tts: (agentId: string, text: string, voiceSettings: any) => {
         return fetcher({

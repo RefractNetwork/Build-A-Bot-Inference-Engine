@@ -52,7 +52,7 @@ export function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem>
-                                <NavLink to="/build">
+                                <NavLink to="/">
                                     <SidebarMenuButton
                                         isActive={location.pathname.includes(
                                             "build"

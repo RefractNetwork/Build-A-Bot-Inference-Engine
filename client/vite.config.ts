@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => {
             "import.meta.env.VITE_BAB_PACKAGE_ID": JSON.stringify(
                 env.BAB_PACKAGE_ID || ""
             ),
+            "import.meta.env.VITE_BAB_NETWORK": JSON.stringify(
+                env.BAB_NETWORK || ""
+            ),
         },
         build: {
             outDir: "dist",

@@ -79,7 +79,7 @@ export function UploadModuleDialog({
             signAndExecuteTransaction(
                 {
                     transaction: tx,
-                    chain: "sui:devnet",
+                    chain: `sui::${import.meta.env.VITE_BAB_NETWORK}`,
                 },
                 {
                     onSuccess: async (result) => {

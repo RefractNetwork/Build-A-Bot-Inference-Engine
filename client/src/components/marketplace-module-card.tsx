@@ -16,6 +16,7 @@ interface MarketplaceModuleCardProps {
 }
 
 const BAB_PACKAGE_ID = import.meta.env.VITE_BAB_PACKAGE_ID;
+const BAB_NETWORK = import.meta.env.VITE_BAB_NETWORK;
 
 export function MarketplaceModuleCard({
     module,
@@ -56,7 +57,7 @@ export function MarketplaceModuleCard({
         signAndExecuteTransaction(
             {
                 transaction: tx,
-                chain: "sui:devnet",
+                chain: `sui::${BAB_NETWORK}`,
             },
             {
                 onSuccess: () => {
@@ -106,7 +107,7 @@ export function MarketplaceModuleCard({
         signAndExecuteTransaction(
             {
                 transaction: tx,
-                chain: "sui:devnet",
+                chain: `sui::${BAB_NETWORK}`,
             },
             {
                 onSuccess: () => {
@@ -119,86 +120,97 @@ export function MarketplaceModuleCard({
         );
     };
 
+    const formatAddress = (address: string) => {
+        return address.length > 12
+            ? `${address.slice(0, 6)}...${address.slice(-4)}`
+            : address;
+    };
+
     return (
-        <div className="border border-gray-700 rounded-lg p-4 bg-gray-900/50 hover:bg-gray-900/70 transition-colors">
-            <div className="aspect-video mb-4 overflow-hidden rounded-lg">
+        <div className="group relative border border-gray-800 rounded-xl p-4 bg-gray-900/50 hover:bg-gray-900/70 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10">
+            <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-gray-800">
                 <img
                     src={module.url}
                     alt={module.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                 />
             </div>
-            <h3 className="text-lg font-semibold text-white">{module.name}</h3>
-            <div className="flex items-center gap-2 my-2">
-                <span className="text-sm text-gray-400 capitalize">
-                    {module.type}
-                </span>
-                {module.isPurchasable && (
-                    <span className="px-2 py-0.5 text-xs bg-green-600/20 text-green-400 rounded-full border border-green-500/20">
-                        For Sale
-                    </span>
-                )}
-            </div>
-            <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-                {module.description}
-            </p>
-            <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-gray-500">
-                    {module.id.length > 10
-                        ? `${module.id.slice(0, 6)}..${module.id.slice(-4)}`
-                        : module.id}
-                </span>
-                <button
-                    onClick={() => navigator.clipboard.writeText(module.id)}
-                    className="p-1 text-xs text-gray-400 hover:text-gray-300"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-3 w-3"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                    >
-                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                    </svg>
-                </button>
-            </div>
-            <div className="flex justify-between items-center mt-auto">
-                <div className="text-sm text-gray-400">
-                    By{" "}
-                    {module.creatorName.length > 10
-                        ? `${module.creatorName.slice(
-                              0,
-                              6
-                          )}..${module.creatorName.slice(-4)}`
-                        : module.creatorName}
+            <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                    <h3 className="text-lg font-semibold text-white truncate">
+                        {module.name}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 capitalize">
+                            {module.type}
+                        </span>
+                        {module.isPurchasable && (
+                            <span className="px-2 py-0.5 text-xs bg-green-600/20 text-green-400 rounded-full border border-green-500/20">
+                                Listed
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    {isOwner ? (
-                        !module.isPurchasable ? (
-                            <button
-                                onClick={() => setIsListingOpen(true)}
-                                className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+
+                <p className="text-sm text-gray-300 line-clamp-2">
+                    {module.description}
+                </p>
+
+                {/* Module info section */}
+                <div className="flex flex-col gap-2 pt-4 border-t border-gray-800">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 text-sm min-w-0">
+                            <span className="text-gray-500 shrink-0">
+                                Object:
+                            </span>
+                            <a
+                                href={`https://suiscan.xyz/${BAB_NETWORK}/object/${module.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 transition-colors truncate"
                             >
-                                List for Sale
-                            </button>
+                                {formatAddress(module.id)}
+                            </a>
+                        </div>
+                        {isOwner ? (
+                            !module.isPurchasable ? (
+                                <button
+                                    onClick={() => setIsListingOpen(true)}
+                                    className="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors shrink-0"
+                                >
+                                    List for Sale
+                                </button>
+                            ) : (
+                                <div className="px-3 py-1.5 text-sm rounded-lg bg-gray-800 text-gray-300 shrink-0">
+                                    {Number(module.price) / 1_000_000_000} SUI
+                                </div>
+                            )
                         ) : (
-                            <div className="px-3 py-1.5 text-sm rounded-md bg-gray-800 text-gray-300">
-                                Listed for{" "}
-                                {Number(module.price) / 1_000_000_000} SUI
-                            </div>
-                        )
-                    ) : (
-                        module.isPurchasable && (
-                            <button
-                                onClick={handlePurchase}
-                                className="px-3 py-1.5 text-sm font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors"
-                            >
-                                Buy for {Number(module.price) / 1_000_000_000}{" "}
-                                SUI
-                            </button>
-                        )
-                    )}
+                            module.isPurchasable && (
+                                <button
+                                    onClick={handlePurchase}
+                                    className="px-3 py-1.5 text-sm font-medium rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center gap-2 shrink-0"
+                                >
+                                    <span>
+                                        {Number(module.price) / 1_000_000_000}{" "}
+                                        SUI
+                                    </span>
+                                    <span>Buy Now</span>
+                                </button>
+                            )
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-500">Creator:</span>
+                        <a
+                            href={`https://suiscan.xyz/${BAB_NETWORK}/address/${module.creator}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 transition-colors truncate"
+                        >
+                            {formatAddress(module.creator)}
+                        </a>
+                    </div>
                 </div>
             </div>
 
