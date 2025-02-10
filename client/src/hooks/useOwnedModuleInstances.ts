@@ -4,8 +4,7 @@ import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
-const BAB_PACKAGE_ID =
-    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+const BAB_PACKAGE_ID = import.meta.env.VITE_BAB_PACKAGE_ID;
 
 export function useOwnedModules() {
     const suiClient = useSuiClient();

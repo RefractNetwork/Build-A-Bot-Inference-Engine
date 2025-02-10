@@ -17,8 +17,7 @@ interface UploadModuleDialogProps {
     onSuccess: () => void;
 }
 
-const BAB_PACKAGE_ID =
-    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+const BAB_PACKAGE_ID = import.meta.env.VITE_BAB_PACKAGE_ID;
 
 export function UploadModuleDialog({
     isOpen,
@@ -54,31 +53,13 @@ export function UploadModuleDialog({
         try {
             setIsUploading(true);
 
-            // Validate JSON structure
-            let parsedContent;
+            // Only validate that it's valid JSON
             try {
-                parsedContent = JSON.parse(uploadData.content);
-
-                // Validate required fields in the JSON structure
-                const requiredFields = ["name"];
-                const missingFields = requiredFields.filter(
-                    (field) => !parsedContent[field]
-                );
-
-                if (missingFields.length > 0) {
-                    throw new Error(
-                        `Missing required fields in JSON: ${missingFields.join(
-                            ", "
-                        )}`
-                    );
-                }
+                JSON.parse(uploadData.content);
             } catch (e) {
-                if (e instanceof SyntaxError) {
-                    throw new Error(
-                        "Invalid JSON format. Please check your JSON syntax."
-                    );
-                }
-                throw e;
+                throw new Error(
+                    "Invalid JSON format. Please check your JSON syntax."
+                );
             }
 
             const tx = new Transaction();
@@ -91,7 +72,7 @@ export function UploadModuleDialog({
                     tx.pure.string(uploadData.imageUrl),
                     tx.pure.string(uploadData.imageUrl), // Using same URL for thumbnail
                     tx.pure.string(uploadData.description),
-                    tx.pure.string("System"), // creator name
+                    tx.pure.string(account.address), // creator name
                 ],
             });
 
@@ -109,8 +90,6 @@ export function UploadModuleDialog({
                                     "::Core::ComposableModule"
                                 )
                         );
-
-                        console.log("Created module:", createdModule);
 
                         if (!createdModule) {
                             throw new Error(
@@ -158,7 +137,7 @@ export function UploadModuleDialog({
             const newValue = e.target.value;
             onChange(newValue);
 
-            // Live validation
+            // Only check if it's valid JSON
             try {
                 if (newValue.trim()) {
                     JSON.parse(newValue);
@@ -181,7 +160,7 @@ export function UploadModuleDialog({
                         error ? "border-red-500" : "border-gray-700"
                     } text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono`}
                     rows={10}
-                    placeholder={``}
+                    placeholder="Enter JSON content..."
                 />
                 {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
             </div>

@@ -230,12 +230,11 @@ export default function Build() {
     };
 
     // Simplified instantiation check
-    const canInstantiate =
-        selectedModules.character &&
-        selectedModules.memory &&
-        // Speech and tone must either both be selected or both be null
-        ((selectedModules.speech === null && selectedModules.tone === null) ||
-            (selectedModules.speech && selectedModules.tone));
+    const canInstantiate = selectedModules.character && selectedModules.memory;
+    // selectedModules.memory &&
+    // // Speech and tone must either both be selected or both be null
+    // ((selectedModules.speech === null && selectedModules.tone === null) ||
+    //     (selectedModules.speech && selectedModules.tone));
 
     const handleInstantiate = async () => {
         if (!selectedModules.character || !selectedModules.memory) return;
@@ -256,10 +255,42 @@ export default function Build() {
             }
 
             // Add speech and tone if selected
-            if (selectedModules.speech && selectedModules.tone) {
-                finalCharacter.speech = selectedModules.speech.data || {};
-                finalCharacter.tone = selectedModules.tone.data || {};
+            if (selectedModules.speech) {
+                // Set up voice settings structure
+                finalCharacter.settings = {
+                    voice: {
+                        model:
+                            selectedModules.speech.data.elevenlabs?.voiceId ||
+                            "eleven_multilingual_v2",
+                        elevenlabs: {
+                            voiceId:
+                                selectedModules.speech.data.elevenlabs
+                                    ?.voiceId || "21m00Tcm4TlvDq8ikWAM",
+                            model:
+                                selectedModules.speech.data.elevenlabs?.model ||
+                                "eleven_multilingual_v2",
+                            stability:
+                                selectedModules.speech.data.elevenlabs
+                                    ?.stability || "0.5",
+                            similarityBoost:
+                                selectedModules.speech.data.elevenlabs
+                                    ?.similarityBoost || "0.9",
+                            style:
+                                selectedModules.speech.data.elevenlabs?.style ||
+                                "0.66",
+                            useSpeakerBoost:
+                                selectedModules.speech.data.elevenlabs
+                                    ?.useSpeakerBoost || "false",
+                        },
+                    },
+                };
+
+                // Add tone settings separately if needed
+                // finalCharacter.tone = selectedModules.tone.data || {};
             }
+
+            console.log("Speech data:", selectedModules.speech);
+            console.log("Final character:", finalCharacter);
 
             finalCharacter.name =
                 finalCharacter.name + "#" + Math.floor(Math.random() * 10000);

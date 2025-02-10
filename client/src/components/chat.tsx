@@ -66,6 +66,11 @@ export default function Page({ agentId, moduleId }: Props) {
             smooth: true,
         });
 
+    const { data: agentData } = useQuery({
+        queryKey: ["agent", agentId],
+        queryFn: () => apiClient.getAgent(agentId),
+    });
+
     useEffect(() => {
         const loadMemoryModule = async () => {
             try {
@@ -374,6 +379,11 @@ export default function Page({ agentId, moduleId }: Props) {
                                                     <ChatTtsButton
                                                         agentId={agentId}
                                                         text={message?.text}
+                                                        voiceSettings={
+                                                            agentData?.character
+                                                                ?.settings
+                                                                ?.voice
+                                                        }
                                                     />
                                                 </div>
                                             ) : null}

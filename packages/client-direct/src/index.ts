@@ -907,15 +907,21 @@ export class DirectClient {
 
         this.app.post("/:agentId/tts", async (req, res) => {
             const text = req.body.text;
+            const voiceSettings = req.body.voiceSettings; // Add this parameter
 
             if (!text) {
                 res.status(400).send("No text provided");
                 return;
             }
 
+            if (!voiceSettings?.elevenlabs?.voiceId) {
+                res.status(400).send("No voice settings provided");
+                return;
+            }
+
             try {
-                // Convert to speech using ElevenLabs
-                const elevenLabsApiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}`;
+                // Convert to speech using ElevenLabs with provided voice settings
+                const elevenLabsApiUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceSettings.elevenlabs.voiceId}`;
                 const apiKey = process.env.ELEVENLABS_XI_API_KEY;
 
                 if (!apiKey) {
@@ -931,22 +937,21 @@ export class DirectClient {
                     body: JSON.stringify({
                         text,
                         model_id:
-                            process.env.ELEVENLABS_MODEL_ID ||
+                            voiceSettings.elevenlabs.model ||
                             "eleven_multilingual_v2",
                         voice_settings: {
                             stability: Number.parseFloat(
-                                process.env.ELEVENLABS_VOICE_STABILITY || "0.5"
+                                voiceSettings.elevenlabs.stability || "0.5"
                             ),
                             similarity_boost: Number.parseFloat(
-                                process.env.ELEVENLABS_VOICE_SIMILARITY_BOOST ||
+                                voiceSettings.elevenlabs.similarityBoost ||
                                     "0.9"
                             ),
                             style: Number.parseFloat(
-                                process.env.ELEVENLABS_VOICE_STYLE || "0.66"
+                                voiceSettings.elevenlabs.style || "0.66"
                             ),
                             use_speaker_boost:
-                                process.env
-                                    .ELEVENLABS_VOICE_USE_SPEAKER_BOOST ===
+                                voiceSettings.elevenlabs.useSpeakerBoost ===
                                 "true",
                         },
                     }),

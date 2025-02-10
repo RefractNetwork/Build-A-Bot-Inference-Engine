@@ -99,24 +99,19 @@ export const apiClient = {
     getAgent: (agentId: string): Promise<{ id: UUID; character: Character }> =>
         fetcher({ url: `/agents/${agentId}` }),
 
-    tts: (agentId: string, text: string) => {
+    tts: (agentId: string, text: string, voiceSettings: any) => {
         return fetcher({
-            // Add return statement here
             url: `/${agentId}/tts`,
             method: "POST",
             body: {
                 text,
+                voiceSettings,
             },
             headers: {
                 "Content-Type": "application/json",
                 Accept: "audio/mpeg",
                 "Transfer-Encoding": "chunked",
             },
-        }).then(async (response) => {
-            if (response instanceof Blob) {
-                return response; // Return the blob directly
-            }
-            throw new Error("Invalid response format from TTS endpoint");
         });
     },
 

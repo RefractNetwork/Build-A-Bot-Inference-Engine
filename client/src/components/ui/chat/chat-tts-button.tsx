@@ -9,9 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 export default function ChatTtsButton({
     agentId,
     text,
+    voiceSettings,
 }: {
     agentId: string;
     text: string;
+    voiceSettings: any;
 }) {
     const { toast } = useToast();
     const [playing, setPlaying] = useState<boolean>(false);
@@ -20,7 +22,7 @@ export default function ChatTtsButton({
 
     const mutation = useMutation({
         mutationKey: ["tts", text],
-        mutationFn: () => apiClient.tts(agentId, text),
+        mutationFn: () => apiClient.tts(agentId, text, voiceSettings),
         onSuccess: (data) => {
             setAudioBlob(data);
             play();
