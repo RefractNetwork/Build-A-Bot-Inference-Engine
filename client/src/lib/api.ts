@@ -98,7 +98,8 @@ export const apiClient = {
     getAgents: () => fetcher({ url: "/agents" }),
     getAgent: (agentId: string): Promise<{ id: UUID; character: Character }> =>
         fetcher({ url: `/agents/${agentId}` }),
-    tts: (agentId: string, text: string) =>
+    tts: (agentId: string, text: string) => {
+        console.log("playing tts");
         fetcher({
             url: `/${agentId}/tts`,
             method: "POST",
@@ -110,7 +111,8 @@ export const apiClient = {
                 Accept: "audio/mpeg",
                 "Transfer-Encoding": "chunked",
             },
-        }),
+        });
+    },
     whisper: async (agentId: string, audioBlob: Blob) => {
         const formData = new FormData();
         formData.append("file", audioBlob, "recording.wav");

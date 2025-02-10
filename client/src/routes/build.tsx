@@ -12,6 +12,9 @@ import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 
 type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
 
+const BAB_PACKAGE_ID =
+    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+
 interface SelectedModules {
     character: any;
     knowledge: any[];
@@ -258,12 +261,25 @@ export default function Build() {
                 finalCharacter.tone = selectedModules.tone.data || {};
             }
 
+            finalCharacter.name =
+                finalCharacter.name + "#" + Math.floor(Math.random() * 10000);
+
             // Create the agent
             const response = await apiClient.startAgent(finalCharacter);
 
             if (response.id) {
                 // Set agent_started to false to indicate a new instantiation
                 Cookies.set("agent_started", "false", { expires: 7 });
+
+                // Save current chat info
+                Cookies.set(
+                    "current_chat",
+                    JSON.stringify({
+                        agentId: response.id,
+                        moduleId: selectedModules.memory.onChainId,
+                    }),
+                    { expires: 7 }
+                );
 
                 navigate(
                     `/chat/${response.id}?moduleId=${selectedModules.memory.onChainId}`
@@ -328,7 +344,7 @@ export default function Build() {
     const handleCreateMemory = () => {
         const tx = new Transaction();
         tx.moveCall({
-            target: `${import.meta.env.BAB_PACKAGE_ID}::Core::publish_module`,
+            target: `${BAB_PACKAGE_ID}::Core::publish_module`,
             arguments: [
                 tx.pure.string("Agent Memory"),
                 tx.pure.string("memory"),
@@ -370,14 +386,7 @@ export default function Build() {
                     try {
                         // Create initial message
                         const initialMessageKey = `message_${Date.now()}_0_system`;
-                        const initialContent = {
-                            [initialMessageKey]: {
-                                text: "Welcome to your Refract Build a Bot agent!",
-                                user: "system",
-                                createdAt: new Date().toISOString(),
-                                attachments: [],
-                            },
-                        };
+                        const initialContent = {};
 
                         await apiClient.createModule({
                             moduleId: createdModule.objectId,

@@ -182,21 +182,33 @@ export default function Page({ agentId, moduleId }: Props) {
             const agentStarted = Cookies.get("agent_started");
 
             if (agentStarted === "false") {
-                // Initialize chat with welcome message
-                const initialMessageKey = `message_${Date.now()}_0_system`;
-                const initialMessage = {
-                    [initialMessageKey]: {
-                        text: "Welcome to your Refract Build a Bot agent!",
-                        user: "system",
-                        createdAt: new Date().toISOString(),
-                        attachments: [],
-                    },
-                };
+                console.log("Initializing agent with chatlog...");
 
-                await apiClient.appendMemoryModule(moduleId, initialMessage);
+                // Get existing message history from memory module
+                const content = await apiClient.getMemoryModule(moduleId);
+                const existingMessages = Object.entries(content)
+                    .map(([_, item]: [string, any]) => ({
+                        text: item.text || "",
+                        user: item.user === "system" ? "assistant" : item.user,
+                    }))
+                    .filter((msg) => msg.text && msg.user)
+                    .map((msg) => `${msg.user}: ${msg.text}`)
+                    .join("\n");
+
+                // Wrap message with chatlog
+                const messageWithHistory = `<chatlog>\n
+                                            ${existingMessages}\n
+                                            </chatlog>\n${message}`;
 
                 // Mark agent as started
                 Cookies.set("agent_started", "true", { expires: 7 });
+
+                const response = await apiClient.sendMessage(
+                    agentId,
+                    messageWithHistory,
+                    selectedFile
+                );
+                return Array.isArray(response) ? [response[0]] : [response];
             }
 
             const response = await apiClient.sendMessage(

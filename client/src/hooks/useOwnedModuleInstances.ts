@@ -4,6 +4,9 @@ import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
+const BAB_PACKAGE_ID =
+    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+
 export function useOwnedModules() {
     const suiClient = useSuiClient();
     const account = useCurrentAccount();
@@ -16,7 +19,7 @@ export function useOwnedModules() {
             const moduleInstances = await suiClient.getOwnedObjects({
                 owner: account.address,
                 filter: {
-                    StructType: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::ComposableModuleInstance`,
+                    StructType: `${BAB_PACKAGE_ID}::Core::ComposableModuleInstance`,
                 },
                 options: {
                     showContent: true,

@@ -17,6 +17,9 @@ interface UploadModuleDialogProps {
     onSuccess: () => void;
 }
 
+const BAB_PACKAGE_ID =
+    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+
 export function UploadModuleDialog({
     isOpen,
     onClose,
@@ -81,7 +84,7 @@ export function UploadModuleDialog({
             const tx = new Transaction();
             tx.setGasBudget(20_000_000);
             tx.moveCall({
-                target: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::publish_module`,
+                target: `${BAB_PACKAGE_ID}::Core::publish_module`,
                 arguments: [
                     tx.pure.string(uploadData.name),
                     tx.pure.string(uploadData.type),
@@ -178,16 +181,7 @@ export function UploadModuleDialog({
                         error ? "border-red-500" : "border-gray-700"
                     } text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono`}
                     rows={10}
-                    placeholder={`Paste your JSON here, example format:
-{
-  "name": "Module Name",
-  "type": "character",
-  "bio": ["Bio line 1", "Bio line 2"],
-  "lore": ["Lore line 1", "Lore line 2"],
-  "knowledge": ["Knowledge 1", "Knowledge 2"],
-  "topics": ["topic1", "topic2"],
-  ...
-}`}
+                    placeholder={``}
                 />
                 {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
             </div>

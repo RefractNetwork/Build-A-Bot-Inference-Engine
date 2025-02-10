@@ -15,6 +15,9 @@ interface MarketplaceModuleCardProps {
     isOwner: boolean;
 }
 
+const BAB_PACKAGE_ID =
+    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+
 export function MarketplaceModuleCard({
     module,
     onSuccess,
@@ -43,7 +46,7 @@ export function MarketplaceModuleCard({
         tx.setGasBudget(2_000_000_000);
 
         tx.moveCall({
-            target: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::update_module_marketplace_listing`,
+            target: `${BAB_PACKAGE_ID}::Core::update_module_marketplace_listing`,
             arguments: [
                 tx.object(module.id),
                 tx.pure.bool(true),
@@ -95,7 +98,7 @@ export function MarketplaceModuleCard({
         const [paymentCoin] = tx.splitCoins(tx.gas, [modulePrice]);
 
         tx.moveCall({
-            target: `0x7415db99ead91a7756500adfaf3b64fd8fc1aa514d827fd5da171ca837499e6d::Core::purchase_module`,
+            target: `${BAB_PACKAGE_ID}::Core::purchase_module`,
             arguments: [tx.object(module.id), paymentCoin],
         });
 

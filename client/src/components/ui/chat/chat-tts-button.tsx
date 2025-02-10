@@ -70,7 +70,9 @@ export default function ChatTtsButton({
     return (
         <div>
             {audioBlob ? (
-                <audio crossOrigin="anonymous" playsInline
+                <audio
+                    crossOrigin="anonymous"
+                    playsInline
                     ref={audioRef}
                     onEnded={() => {
                         setPlaying(false);

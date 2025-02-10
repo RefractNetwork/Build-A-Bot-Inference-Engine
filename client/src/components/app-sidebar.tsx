@@ -14,54 +14,33 @@ import { NavLink, useLocation } from "react-router";
 import ConnectionStatus from "./connection-status";
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
 import Cookies from "js-cookie";
-
 import { Beaker, MessageSquare, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
+
+const CURRENT_CHAT_COOKIE = "current_chat";
 
 export function AppSidebar() {
     const location = useLocation();
     const account = useCurrentAccount();
-    const [currentAgentId, setCurrentAgentId] = useState<string | null>(null);
-    const [currentMemoryId, setCurrentMemoryId] = useState<string | null>(null);
+    const [currentChat, setCurrentChat] = useState<{
+        agentId: string;
+        moduleId: string;
+    } | null>(null);
 
-    // Check for active chat session and memory module on component mount
+    // Check for active chat session on component mount
     useEffect(() => {
-        // Look through cookies for the most recently created agent
-        const cookies = Object.keys(Cookies.get())
-            .filter((key) => key.startsWith("agent_"))
-            .reduce((acc: { [key: string]: any }, key) => {
-                if (key.endsWith("_created")) {
-                    const id = key.split("_")[1];
-                    acc[id] = {
-                        ...acc[id],
-                        timestamp: parseInt(Cookies.get(key) || "0"),
-                    };
-                } else if (key.endsWith("_memory")) {
-                    const id = key.split("_")[1];
-                    acc[id] = {
-                        ...acc[id],
-                        memoryId: Cookies.get(key),
-                    };
-                }
-                return acc;
-            }, {});
-
-        // Find the most recent agent with a memory module
-        const recentAgent = Object.entries(cookies)
-            .filter(([_, data]) => data.timestamp && data.memoryId)
-            .sort(([_, a], [__, b]) => b.timestamp - a.timestamp)[0];
-
-        if (recentAgent) {
-            const [agentId, data] = recentAgent;
-            setCurrentAgentId(agentId);
-            setCurrentMemoryId(data.memoryId);
+        const savedChat = Cookies.get(CURRENT_CHAT_COOKIE);
+        if (savedChat) {
+            try {
+                setCurrentChat(JSON.parse(savedChat));
+            } catch (error) {
+                console.error("Failed to parse current chat cookie:", error);
+            }
         }
     }, []);
 
     return (
         <Sidebar className="hidden md:flex">
-            {" "}
-            {/* Hide on mobile */}
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -92,10 +71,10 @@ export function AppSidebar() {
                     <SidebarGroupLabel>Navigation</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {currentAgentId && currentMemoryId && (
+                            {currentChat && (
                                 <SidebarMenuItem>
                                     <NavLink
-                                        to={`/chat/${currentAgentId}?moduleId=${currentMemoryId}`}
+                                        to={`/chat/${currentChat.agentId}?moduleId=${currentChat.moduleId}`}
                                     >
                                         <SidebarMenuButton
                                             isActive={location.pathname.includes(
