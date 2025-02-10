@@ -211,7 +211,7 @@ export function UploadModuleDialog({
                             <option value="character">Character</option>
                             <option value="knowledge">Knowledge</option>
                             <option value="speech">Speech</option>
-                            <option value="tone">Tone</option>
+                            {/* <option value="tone">Tone</option> */}
                             <option value="memory">Memory</option>
                         </select>
                     </div>

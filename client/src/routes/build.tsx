@@ -51,6 +51,8 @@ export default function Build() {
         refetch: refetchModules,
     } = useOwnedModules();
 
+    const [isCreatingMemory, setIsCreatingMemory] = useState(false);
+
     // Initialize state from cookie if available
     const [selectedModules, setSelectedModules] = useState<SelectedModules>(
         () => {
@@ -170,7 +172,9 @@ export default function Build() {
     }, [ownedModules]);
 
     // Helper function to check if a module is still owned
-    const isModuleOwned = (type: ModuleType, moduleId: string) => {
+    const isModuleOwned = async (type: ModuleType, moduleId: string) => {
+        await refetchModules();
+
         if (!ownedModules || !ownedModules[type]) return false;
         return ownedModules[type].some((m) => m.onChainId === moduleId);
     };
@@ -297,19 +301,9 @@ export default function Build() {
             // Create the agent
             const response = await apiClient.startAgent(finalCharacter);
 
-            if (response.id) {
+            if (response) {
                 // Set agent_started to false to indicate a new instantiation
                 Cookies.set("agent_started", "false", { expires: 7 });
-
-                // Save current chat info
-                Cookies.set(
-                    "current_chat",
-                    JSON.stringify({
-                        agentId: response.id,
-                        moduleId: selectedModules.memory.onChainId,
-                    }),
-                    { expires: 7 }
-                );
 
                 navigate(
                     `/chat/${response.id}?moduleId=${selectedModules.memory.onChainId}`
@@ -319,6 +313,10 @@ export default function Build() {
             console.error("Failed to create agent", error);
         }
     };
+
+    useEffect(() => {
+        refetchModules();
+    }, [refetchModules]);
 
     const renderModule = (
         type: ModuleType,
@@ -372,6 +370,7 @@ export default function Build() {
     }
 
     const handleCreateMemory = () => {
+        setIsCreatingMemory(true);
         const tx = new Transaction();
         tx.moveCall({
             target: `${BAB_PACKAGE_ID}::Core::publish_module`,
@@ -396,26 +395,20 @@ export default function Build() {
             },
             {
                 onSuccess: async (result) => {
-                    console.log("Transaction result:", result);
-                    console.log("Object changes:", result.objectChanges);
-
-                    // Find the created module object
-                    const createdModule = result.objectChanges?.find(
-                        (change) =>
-                            change.type === "created" &&
-                            change.objectType.endsWith(
-                                "::Core::ComposableModule"
-                            )
-                    );
-
-                    if (!createdModule) {
-                        console.error("Failed to get created module data");
-                        return;
-                    }
-
                     try {
-                        // Create initial message
-                        const initialContent = {};
+                        const createdModule = result.objectChanges?.find(
+                            (change) =>
+                                change.type === "created" &&
+                                change.objectType.endsWith(
+                                    "::Core::ComposableModule"
+                                )
+                        );
+
+                        if (!createdModule) {
+                            throw new Error(
+                                "Failed to get created module data"
+                            );
+                        }
 
                         await apiClient.createModule({
                             moduleId: createdModule.objectId,
@@ -423,36 +416,41 @@ export default function Build() {
                             type: "memory",
                             imageUrl:
                                 "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
-                            content: JSON.stringify(initialContent),
+                            content: JSON.stringify({}),
                             creatorId: "System",
                             description:
                                 "Memory storage for agent interactions",
                         });
 
-                        // Wait for indexing and refetch, then auto-select the new memory
+                        // Refetch and select new module
+                        await refetchModules();
+
+                        const newModule = {
+                            onChainId: createdModule.objectId,
+                            name: "Agent Memory",
+                            type: "memory",
+                            imageUrl:
+                                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
+                            description:
+                                "Memory storage for agent interactions",
+                        };
+
+                        console.log("New memory module:", newModule);
                         setTimeout(async () => {
-                            await refetchModules();
-                            // Auto-select the newly created memory
-                            const newModule = {
-                                onChainId: createdModule.objectId,
-                                name: "Agent Memory",
-                                type: "memory",
-                                imageUrl:
-                                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
-                                description:
-                                    "Memory storage for agent interactions",
-                            };
-                            handleSelectModule("memory", newModule);
-                        }, 600);
+                            await handleSelectModule("memory", newModule);
+                        }, 1000);
+                        setIsCreatingMemory(false);
                     } catch (error) {
                         console.error(
                             "Failed to initialize module content:",
                             error
                         );
+                        setIsCreatingMemory(false);
                     }
                 },
                 onError: (error) => {
                     console.error("Failed to create memory module:", error);
+                    setIsCreatingMemory(false);
                 },
             }
         );
@@ -517,9 +515,12 @@ export default function Build() {
                             </h3>
                             <button
                                 onClick={handleCreateMemory}
-                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                disabled={isCreatingMemory}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                             >
-                                Create New
+                                {isCreatingMemory
+                                    ? "Creating..."
+                                    : "Create New"}
                             </button>
                         </div>
                         {renderModule("memory", selectedModules.memory, true)}
