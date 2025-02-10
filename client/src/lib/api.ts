@@ -98,9 +98,10 @@ export const apiClient = {
     getAgents: () => fetcher({ url: "/agents" }),
     getAgent: (agentId: string): Promise<{ id: UUID; character: Character }> =>
         fetcher({ url: `/agents/${agentId}` }),
+
     tts: (agentId: string, text: string) => {
-        console.log("playing tts");
-        fetcher({
+        return fetcher({
+            // Add return statement here
             url: `/${agentId}/tts`,
             method: "POST",
             body: {
@@ -111,8 +112,14 @@ export const apiClient = {
                 Accept: "audio/mpeg",
                 "Transfer-Encoding": "chunked",
             },
+        }).then(async (response) => {
+            if (response instanceof Blob) {
+                return response; // Return the blob directly
+            }
+            throw new Error("Invalid response format from TTS endpoint");
         });
     },
+
     whisper: async (agentId: string, audioBlob: Blob) => {
         const formData = new FormData();
         formData.append("file", audioBlob, "recording.wav");

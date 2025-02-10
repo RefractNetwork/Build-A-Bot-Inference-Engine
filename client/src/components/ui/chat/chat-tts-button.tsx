@@ -63,6 +63,9 @@ export default function ChatTtsButton({
             play();
             return;
         }
+
+        // Trigger the TTS mutation
+        mutation.mutate();
     };
 
     const iconClass = "text-muted-foreground size-4";
