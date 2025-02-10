@@ -8,12 +8,15 @@ import { useNavigate } from "react-router";
 import Cookies from "js-cookie";
 import { useOwnedModules } from "@/hooks/useOwnedModuleInstances";
 import { Transaction } from "@mysten/sui/transactions";
-import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import {
+    useCurrentAccount,
+    useSignAndExecuteTransaction,
+    useSuiClient,
+} from "@mysten/dapp-kit";
 
 type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
 
-const BAB_PACKAGE_ID =
-    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+const BAB_PACKAGE_ID = import.meta.env.VITE_BAB_PACKAGE_ID;
 
 interface SelectedModules {
     character: any;
@@ -28,6 +31,8 @@ const COOKIE_KEY = "build_config";
 export default function Build() {
     const navigate = useNavigate();
     const client = useSuiClient();
+
+    const account = useCurrentAccount();
     const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction({
         execute: async ({ bytes, signature }) =>
             await client.executeTransactionBlock({
@@ -45,8 +50,6 @@ export default function Build() {
         isLoading,
         refetch: refetchModules,
     } = useOwnedModules();
-
-    console.log("Owned modules:", ownedModules);
 
     // Initialize state from cookie if available
     const [selectedModules, setSelectedModules] = useState<SelectedModules>(
@@ -285,12 +288,8 @@ export default function Build() {
                     },
                 };
 
-                // Add tone settings separately if needed
                 // finalCharacter.tone = selectedModules.tone.data || {};
             }
-
-            console.log("Speech data:", selectedModules.speech);
-            console.log("Final character:", finalCharacter);
 
             finalCharacter.name =
                 finalCharacter.name + "#" + Math.floor(Math.random() * 10000);
@@ -386,7 +385,7 @@ export default function Build() {
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s"
                 ),
                 tx.pure.string("Memory storage for agent interactions"),
-                tx.pure.string("System"),
+                tx.pure.string(account.address),
             ],
         });
 
@@ -416,7 +415,6 @@ export default function Build() {
 
                     try {
                         // Create initial message
-                        const initialMessageKey = `message_${Date.now()}_0_system`;
                         const initialContent = {};
 
                         await apiClient.createModule({
