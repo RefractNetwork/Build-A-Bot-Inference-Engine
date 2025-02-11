@@ -1,3 +1,11 @@
+# Build-A-Bot Inference Engine
+## Sui AI Agent Typhoon Hackathon - ElizaOS Track
+We enhanced the existing Eliza OS by modularizing its character file system, breaking it down into distinct parts and adding a memory module. Each agent’s behavior is defined by a character configuration file, which is now divided into separate modules: **character**, **knowledge**, **voice**, **tone**, and **action**. The knowledge modules store information in string arrays, while the voice modules, integrated with Eleven Labs, include settings like voice speed. These modules are tokenized into a Sui smart contract NFT, which can be listed on a marketplace. When purchased, an NFT is minted, allowing the use of the modules. 
+
+To initialize an agent, a memory module is minted, which stores the ownership to its chat history. If an existing memory module is used, the previous chat history is injected into the new session. The final agent is composed by integrating these modules into a character file and chat log, enabling a seamless and customizable user experience.
+
+---
+
 # Eliza 🤖
 
 <div align="center">
