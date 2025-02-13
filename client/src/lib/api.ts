@@ -1,8 +1,8 @@
 import type { UUID, Character } from "@elizaos/core";
 
-// const BASE_URL = `http://localhost:${import.meta.env.VITE_SERVER_PORT}`;
+const BASE_URL = `http://localhost:${import.meta.env.VITE_SERVER_PORT}`;
 
-const BASE_URL = import.meta.env.VITE_ELIZA_BE;
+// const BASE_URL = import.meta.env.VITE_ELIZA_BE;
 
 const fetcher = async ({
     url,
@@ -65,7 +65,8 @@ const fetcher = async ({
     });
 };
 
-const babServerUrl = import.meta.env.VITE_BE;
+const babServerUrl = "http://localhost:5001";
+// const babServerUrl = import.meta.env.VITE_BE;
 
 export const apiClient = {
     delete: (url: string) =>

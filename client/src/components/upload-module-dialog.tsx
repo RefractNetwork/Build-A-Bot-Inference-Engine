@@ -18,6 +18,7 @@ interface UploadModuleDialogProps {
 }
 
 const BAB_PACKAGE_ID = import.meta.env.VITE_BAB_PACKAGE_ID;
+const BAB_NETWORK = import.meta.env.VITE_BAB_NETWORK;
 
 export function UploadModuleDialog({
     isOpen,
@@ -53,9 +54,15 @@ export function UploadModuleDialog({
         try {
             setIsUploading(true);
 
+            console.log("Uploading module:", uploadData.content);
             // Only validate that it's valid JSON
+            const cleanContent = uploadData.content.replace(/\n\s*/g, "");
+
+            // Validate JSON
             try {
-                JSON.parse(uploadData.content);
+                JSON.parse(cleanContent);
+                // Update the content with cleaned version
+                uploadData.content = cleanContent;
             } catch (e) {
                 throw new Error(
                     "Invalid JSON format. Please check your JSON syntax."
@@ -79,7 +86,7 @@ export function UploadModuleDialog({
             signAndExecuteTransaction(
                 {
                     transaction: tx,
-                    chain: `sui::${import.meta.env.VITE_BAB_NETWORK}`,
+                    chain: `sui:${BAB_NETWORK}`,
                 },
                 {
                     onSuccess: async (result) => {

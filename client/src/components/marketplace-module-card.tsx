@@ -57,7 +57,7 @@ export function MarketplaceModuleCard({
         signAndExecuteTransaction(
             {
                 transaction: tx,
-                chain: `sui::${BAB_NETWORK}`,
+                chain: `sui:${BAB_NETWORK}`,
             },
             {
                 onSuccess: () => {
@@ -107,7 +107,7 @@ export function MarketplaceModuleCard({
         signAndExecuteTransaction(
             {
                 transaction: tx,
-                chain: `sui::${BAB_NETWORK}`,
+                chain: `sui:${BAB_NETWORK}`,
             },
             {
                 onSuccess: () => {

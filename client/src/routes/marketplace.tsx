@@ -206,8 +206,8 @@ export default function Marketplace() {
                                 )
                             ) : (
                                 <div className="flex items-center justify-center min-h-[40vh] w-full">
-                                    <div className="text-center py-12 bg-gray-900/50 rounded-lg w-full max-w-md">
-                                        <p className="text-gray-400">
+                                    <div className="text-center py-12 rounded-lg w-full max-w-md">
+                                        <p>
                                             You haven't uploaded any modules yet
                                         </p>
                                     </div>
