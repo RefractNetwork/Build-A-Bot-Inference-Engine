@@ -8,12 +8,16 @@ import { useNavigate } from "react-router";
 import Cookies from "js-cookie";
 import { useOwnedModules } from "@/hooks/useOwnedModuleInstances";
 import { Transaction } from "@mysten/sui/transactions";
-import { useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import {
+    useCurrentAccount,
+    useSignAndExecuteTransaction,
+    useSuiClient,
+} from "@mysten/dapp-kit";
 
 type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
 
-const BAB_PACKAGE_ID =
-    "0x74546358274f661bc5d1ec9f21665f6725f71634e9c943a0616e963ea976b9c4";
+const BAB_PACKAGE_ID = import.meta.env.VITE_BAB_PACKAGE_ID;
+const BAB_NETWORK = import.meta.env.VITE_BAB_NETWORK;
 
 interface SelectedModules {
     character: any;
@@ -28,6 +32,8 @@ const COOKIE_KEY = "build_config";
 export default function Build() {
     const navigate = useNavigate();
     const client = useSuiClient();
+
+    const account = useCurrentAccount();
     const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction({
         execute: async ({ bytes, signature }) =>
             await client.executeTransactionBlock({
@@ -46,7 +52,7 @@ export default function Build() {
         refetch: refetchModules,
     } = useOwnedModules();
 
-    console.log("Owned modules:", ownedModules);
+    const [isCreatingMemory, setIsCreatingMemory] = useState(false);
 
     // Initialize state from cookie if available
     const [selectedModules, setSelectedModules] = useState<SelectedModules>(
@@ -167,7 +173,9 @@ export default function Build() {
     }, [ownedModules]);
 
     // Helper function to check if a module is still owned
-    const isModuleOwned = (type: ModuleType, moduleId: string) => {
+    const isModuleOwned = async (type: ModuleType, moduleId: string) => {
+        await refetchModules();
+
         if (!ownedModules || !ownedModules[type]) return false;
         return ownedModules[type].some((m) => m.onChainId === moduleId);
     };
@@ -285,12 +293,8 @@ export default function Build() {
                     },
                 };
 
-                // Add tone settings separately if needed
                 // finalCharacter.tone = selectedModules.tone.data || {};
             }
-
-            console.log("Speech data:", selectedModules.speech);
-            console.log("Final character:", finalCharacter);
 
             finalCharacter.name =
                 finalCharacter.name + "#" + Math.floor(Math.random() * 10000);
@@ -298,19 +302,9 @@ export default function Build() {
             // Create the agent
             const response = await apiClient.startAgent(finalCharacter);
 
-            if (response.id) {
+            if (response) {
                 // Set agent_started to false to indicate a new instantiation
                 Cookies.set("agent_started", "false", { expires: 7 });
-
-                // Save current chat info
-                Cookies.set(
-                    "current_chat",
-                    JSON.stringify({
-                        agentId: response.id,
-                        moduleId: selectedModules.memory.onChainId,
-                    }),
-                    { expires: 7 }
-                );
 
                 navigate(
                     `/chat/${response.id}?moduleId=${selectedModules.memory.onChainId}`
@@ -320,6 +314,10 @@ export default function Build() {
             console.error("Failed to create agent", error);
         }
     };
+
+    useEffect(() => {
+        refetchModules();
+    }, [refetchModules]);
 
     const renderModule = (
         type: ModuleType,
@@ -369,10 +367,18 @@ export default function Build() {
     };
 
     if (isLoading) {
-        return <div>Loading your modules...</div>;
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <p className="text-gray-400">Loading...</p>
+                </div>
+            </div>
+        );
     }
 
     const handleCreateMemory = () => {
+        setIsCreatingMemory(true);
         const tx = new Transaction();
         tx.moveCall({
             target: `${BAB_PACKAGE_ID}::Core::publish_module`,
@@ -386,38 +392,31 @@ export default function Build() {
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s"
                 ),
                 tx.pure.string("Memory storage for agent interactions"),
-                tx.pure.string("System"),
+                tx.pure.string(account.address),
             ],
         });
 
         signAndExecuteTransaction(
             {
                 transaction: tx,
-                chain: "sui:devnet",
+                chain: `sui:${BAB_NETWORK}`,
             },
             {
                 onSuccess: async (result) => {
-                    console.log("Transaction result:", result);
-                    console.log("Object changes:", result.objectChanges);
-
-                    // Find the created module object
-                    const createdModule = result.objectChanges?.find(
-                        (change) =>
-                            change.type === "created" &&
-                            change.objectType.endsWith(
-                                "::Core::ComposableModule"
-                            )
-                    );
-
-                    if (!createdModule) {
-                        console.error("Failed to get created module data");
-                        return;
-                    }
-
                     try {
-                        // Create initial message
-                        const initialMessageKey = `message_${Date.now()}_0_system`;
-                        const initialContent = {};
+                        const createdModule = result.objectChanges?.find(
+                            (change) =>
+                                change.type === "created" &&
+                                change.objectType.endsWith(
+                                    "::Core::ComposableModule"
+                                )
+                        );
+
+                        if (!createdModule) {
+                            throw new Error(
+                                "Failed to get created module data"
+                            );
+                        }
 
                         await apiClient.createModule({
                             moduleId: createdModule.objectId,
@@ -425,36 +424,41 @@ export default function Build() {
                             type: "memory",
                             imageUrl:
                                 "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
-                            content: JSON.stringify(initialContent),
+                            content: JSON.stringify({}),
                             creatorId: "System",
                             description:
                                 "Memory storage for agent interactions",
                         });
 
-                        // Wait for indexing and refetch, then auto-select the new memory
+                        // Refetch and select new module
+                        await refetchModules();
+
+                        const newModule = {
+                            onChainId: createdModule.objectId,
+                            name: "Agent Memory",
+                            type: "memory",
+                            imageUrl:
+                                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
+                            description:
+                                "Memory storage for agent interactions",
+                        };
+
+                        console.log("New memory module:", newModule);
                         setTimeout(async () => {
-                            await refetchModules();
-                            // Auto-select the newly created memory
-                            const newModule = {
-                                onChainId: createdModule.objectId,
-                                name: "Agent Memory",
-                                type: "memory",
-                                imageUrl:
-                                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFMvrcZMX0fe5AzzDU4wTXCaMYKNUfJe86kA&s",
-                                description:
-                                    "Memory storage for agent interactions",
-                            };
-                            handleSelectModule("memory", newModule);
-                        }, 600);
+                            await handleSelectModule("memory", newModule);
+                        }, 1000);
+                        setIsCreatingMemory(false);
                     } catch (error) {
                         console.error(
                             "Failed to initialize module content:",
                             error
                         );
+                        setIsCreatingMemory(false);
                     }
                 },
                 onError: (error) => {
                     console.error("Failed to create memory module:", error);
+                    setIsCreatingMemory(false);
                 },
             }
         );
@@ -519,9 +523,12 @@ export default function Build() {
                             </h3>
                             <button
                                 onClick={handleCreateMemory}
-                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                disabled={isCreatingMemory}
+                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                             >
-                                Create New
+                                {isCreatingMemory
+                                    ? "Creating..."
+                                    : "Create New"}
                             </button>
                         </div>
                         {renderModule("memory", selectedModules.memory, true)}

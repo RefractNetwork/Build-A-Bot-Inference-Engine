@@ -15,6 +15,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Config options for the networks you want to connect to
 const { networkConfig } = createNetworkConfig({
     mainnet: { url: getFullnodeUrl("mainnet") },
+    testnet: { url: getFullnodeUrl("testnet") },
     devnet: { url: getFullnodeUrl("devnet") },
 });
 const queryClient = new QueryClient();
@@ -28,7 +29,10 @@ if (!rootElement) {
 createRoot(rootElement).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
-            <SuiClientProvider networks={networkConfig} defaultNetwork="devnet">
+            <SuiClientProvider
+                networks={networkConfig}
+                defaultNetwork="testnet"
+            >
                 <WalletProvider autoConnect={true}>
                     <App />
                 </WalletProvider>

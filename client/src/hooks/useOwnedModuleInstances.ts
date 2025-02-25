@@ -1,4 +1,3 @@
-// hooks/useOwnedModules.ts
 // @ts-nocheck
 import { useSuiClient } from "@mysten/dapp-kit";
 import { useQuery } from "@tanstack/react-query";

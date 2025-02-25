@@ -7,7 +7,7 @@ import { Toaster } from "./components/ui/toaster";
 import { BrowserRouter, Route, Routes } from "react-router";
 import Chat from "./routes/chat";
 import Overview from "./routes/overview";
-import Home from "./routes/home";
+// import Home from "./routes/home";
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -36,14 +36,14 @@ function App() {
                             <SidebarProvider>
                                 <AppSidebar />
                                 <SidebarInset>
-                                    <div className="flex flex-1 flex-col gap-4 size-full container">
+                                    <div className="flex flex-1 flex-col gap-4 size-full">
                                         <Routes>
+                                            {/* <Route */}
+                                            {/*     path="/" */}
+                                            {/*     element={<Home />} */}
+                                            {/* /> */}
                                             <Route
                                                 path="/"
-                                                element={<Home />}
-                                            />
-                                            <Route
-                                                path="build"
                                                 element={<Build />}
                                             />
                                             <Route

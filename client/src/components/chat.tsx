@@ -52,6 +52,7 @@ export default function Page({ agentId, moduleId }: Props) {
     const { toast } = useToast();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [input, setInput] = useState("");
+    const [isInitializing, setIsInitializing] = useState(true);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
@@ -70,6 +71,14 @@ export default function Page({ agentId, moduleId }: Props) {
         queryKey: ["agent", agentId],
         queryFn: () => apiClient.getAgent(agentId),
     });
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsInitializing(false);
+        }, 2000); // Show initializing for 2 seconds
+
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         const loadMemoryModule = async () => {
@@ -298,6 +307,17 @@ export default function Page({ agentId, moduleId }: Props) {
     });
 
     const CustomAnimatedDiv = animated.div as React.FC<AnimatedDivProps>;
+
+    if (isInitializing) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <p className="text-gray-400">Initializing...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col w-full h-[calc(100dvh)] p-4">

@@ -13,31 +13,11 @@ import {
 import { NavLink, useLocation } from "react-router";
 import ConnectionStatus from "./connection-status";
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
-import Cookies from "js-cookie";
-import { Beaker, MessageSquare, ShoppingBag } from "lucide-react";
-import { useEffect, useState } from "react";
-
-const CURRENT_CHAT_COOKIE = "current_chat";
+import { Beaker, ShoppingBag } from "lucide-react";
 
 export function AppSidebar() {
     const location = useLocation();
     const account = useCurrentAccount();
-    const [currentChat, setCurrentChat] = useState<{
-        agentId: string;
-        moduleId: string;
-    } | null>(null);
-
-    // Check for active chat session on component mount
-    useEffect(() => {
-        const savedChat = Cookies.get(CURRENT_CHAT_COOKIE);
-        if (savedChat) {
-            try {
-                setCurrentChat(JSON.parse(savedChat));
-            } catch (error) {
-                console.error("Failed to parse current chat cookie:", error);
-            }
-        }
-    }, []);
 
     return (
         <Sidebar className="hidden md:flex">
@@ -71,24 +51,8 @@ export function AppSidebar() {
                     <SidebarGroupLabel>Navigation</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {currentChat && (
-                                <SidebarMenuItem>
-                                    <NavLink
-                                        to={`/chat/${currentChat.agentId}?moduleId=${currentChat.moduleId}`}
-                                    >
-                                        <SidebarMenuButton
-                                            isActive={location.pathname.includes(
-                                                "chat"
-                                            )}
-                                        >
-                                            <MessageSquare />
-                                            <span>Current Chat</span>
-                                        </SidebarMenuButton>
-                                    </NavLink>
-                                </SidebarMenuItem>
-                            )}
                             <SidebarMenuItem>
-                                <NavLink to="/build">
+                                <NavLink to="/">
                                     <SidebarMenuButton
                                         isActive={location.pathname.includes(
                                             "build"
