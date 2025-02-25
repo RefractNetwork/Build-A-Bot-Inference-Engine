@@ -17,6 +17,7 @@ import {
 type ModuleType = "character" | "knowledge" | "speech" | "tone" | "memory";
 
 const BAB_PACKAGE_ID = import.meta.env.VITE_BAB_PACKAGE_ID;
+const BAB_NETWORK = import.meta.env.VITE_BAB_NETWORK;
 
 interface SelectedModules {
     character: any;
@@ -398,7 +399,7 @@ export default function Build() {
         signAndExecuteTransaction(
             {
                 transaction: tx,
-                chain: "sui:devnet",
+                chain: `sui:${BAB_NETWORK}`,
             },
             {
                 onSuccess: async (result) => {

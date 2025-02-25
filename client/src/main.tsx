@@ -29,7 +29,10 @@ if (!rootElement) {
 createRoot(rootElement).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
-            <SuiClientProvider networks={networkConfig} defaultNetwork="devnet">
+            <SuiClientProvider
+                networks={networkConfig}
+                defaultNetwork="testnet"
+            >
                 <WalletProvider autoConnect={true}>
                     <App />
                 </WalletProvider>
